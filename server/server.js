@@ -27,4 +27,8 @@ connectDB().then(() => {
   console.error('Failed to start server:', err);
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 
