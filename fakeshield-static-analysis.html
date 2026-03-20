@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FakeShield — Static Analysis · Domain Model</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Fira+Code:wght@300;400;500&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f4f8;
+  --paper: #ffffff;
+  --ink: #0d1b2a;
+  --ink2: #1e3a5f;
+  --ink3: #4a6080;
+  --ink4: #8fa3bc;
+  --rule: #d0dbe8;
+  --rule2: #e8eef5;
+  --accent: #1e3a5f;
+
+  /* Entity category colors */
+  --human-h: #7c3a0e;   --human-b: #fffbeb;   --human-br: #d97706;
+  --core-h: #1e3a5f;    --core-b: #eff6ff;    --core-br: #3b82f6;
+  --detect-h: #115e59;  --detect-b: #f0fdfa;  --detect-br: #14b8a6;
+  --plat-h: #334155;    --plat-b: #f8fafc;    --plat-br: #64748b;
+  --evid-h: #4c1d95;    --evid-b: #f5f3ff;    --evid-br: #7c3aed;
+  --comms-h: #7f1d1d;   --comms-b: #fff1f2;   --comms-br: #e11d48;
+
+  --font-display: 'Cormorant Garamond', serif;
+  --font-mono: 'Fira Code', monospace;
+  --font-body: 'Nunito', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* Fine dot-grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: radial-gradient(circle, #b8cce0 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none; z-index: 0; opacity: 0.45;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 36px 28px 80px; }
+
+/* ── Document Header ── */
+.doc-header {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--ink2);
+  border-radius: 4px;
+  padding: 32px 40px 26px;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 12px rgba(30,58,95,0.08);
+  display: flex; align-items: flex-start; gap: 40px;
+}
+
+.doc-badge {
+  flex-shrink: 0;
+  width: 64px; height: 64px;
+  background: var(--ink2);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+}
+
+.doc-info { flex: 1; }
+
+.doc-docid {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink4);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.doc-title {
+  font-family: var(--font-display);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.doc-title em { font-style: italic; color: var(--ink2); }
+
+.doc-subtitle {
+  font-size: 13px;
+  color: var(--ink3);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.doc-meta {
+  display: flex; flex-wrap: wrap; gap: 24px;
+  margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid var(--rule2);
+}
+
+.meta-chip {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 5px 10px;
+  color: var(--ink3);
+}
+
+.meta-chip strong { color: var(--ink2); }
+
+/* ── Section ── */
+.section {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 6px rgba(30,58,95,0.05);
+  overflow: hidden;
+}
+
+.section-hdr {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 24px;
+  background: linear-gradient(90deg, #f8fafc 0%, var(--paper) 100%);
+  border-bottom: 1px solid var(--rule2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sec-id {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 500;
+  color: var(--paper);
+  background: var(--ink2);
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.sec-title {
+  font-family: var(--font-display);
+  font-size: 21px; font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.3px;
+}
+
+.sec-toggle { margin-left: auto; color: var(--ink4); font-size: 14px; transition: transform 0.2s; }
+.section.closed .sec-toggle { transform: rotate(-90deg); }
+.section.closed .sec-body { display: none; }
+.sec-body { padding: 0; }
+
+/* ── Entity + Relationship Tables ── */
+.cat-table { width: 100%; border-collapse: collapse; }
+.cat-table th {
+  padding: 10px 16px;
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--ink3);
+  text-align: left;
+  border-bottom: 2px solid var(--rule);
+  border-right: 1px solid var(--rule2);
+}
+.cat-table th:last-child { border-right: none; }
+.cat-table td {
+  padding: 9px 16px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--rule2);
+  border-right: 1px solid var(--rule2);
+  color: var(--ink2);
+  vertical-align: top;
+}
+.cat-table td:last-child { border-right: none; }
+.cat-table tr:last-child td { border-bottom: none; }
+.cat-table tr:hover td { background: rgba(30,58,95,0.025); }
+
+.entity-id {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  color: var(--ink2);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px 7px;
+  display: inline-block;
+}
+
+.cat-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid;
+  letter-spacing: 0.5px;
+  margin-right: 3px;
+}
+.badge-human { background: #fef3c7; color: #7c3a0e; border-color: #d97706; }
+.badge-core  { background: #dbeafe; color: #1e3a5f; border-color: #3b82f6; }
+.badge-detect{ background: #ccfbf1; color: #115e59; border-color: #14b8a6; }
+.badge-plat  { background: #f1f5f9; color: #334155; border-color: #64748b; }
+.badge-evid  { background: #ede9fe; color: #4c1d95; border-color: #7c3aed; }
+.badge-comms { background: #ffe4e6; color: #7f1d1d; border-color: #e11d48; }
+
+.mult-badge {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  color: var(--ink2);
+}
+
+.rel-type {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.rel-assoc  { background: #dbeafe; color: #1e40af; }
+.rel-comp   { background: #d1fae5; color: #065f46; }
+.rel-agg    { background: #fef3c7; color: #78350f; }
+.rel-dep    { background: #f3e8ff; color: #5b21b6; }
+
+/* ── Diagram Wrapper ── */
+.diagram-scroll { overflow-x: auto; padding: 20px 0 8px; }
+.diagram-label {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--ink4);
+  text-align: center;
+  padding: 8px 0 16px;
+  letter-spacing: 1px;
+}
+
+/* ── SVG Diagram Styles ── */
+.uml-svg { display: block; min-width: 1320px; }
+
+/* ── Legend ── */
+.legend-row {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--rule2);
+  background: var(--bg);
+}
+.legend-item {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--ink3);
+}
+
+/* ── Tabs for diagrams ── */
+.diagram-tabs {
+  display: flex; border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+  padding: 0 20px;
+}
+.d-tab {
+  padding: 10px 20px;
+  font-family: var(--font-mono); font-size: 10px;
+  font-weight: 600; color: var(--ink4);
+  cursor: pointer; border: none; background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: all 0.15s;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.d-tab:hover { color: var(--ink2); }
+.d-tab.active { color: var(--ink2); border-bottom-color: var(--ink2); background: var(--paper); }
+.d-panel { display: none; }
+.d-panel.active { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══════════════════ DOCUMENT HEADER ═══════════════════ -->
+<div class="doc-header">
+  <div class="doc-badge">🔬</div>
+  <div class="doc-info">
+    <div class="doc-docid">SRS-SA-002 · Static Analysis · Domain Model</div>
+    <div class="doc-title">FakeShield — <em>Static Analysis</em></div>
+    <div class="doc-subtitle">Domain Entity Identification · Class Diagram (Domain Model) · Object Diagram (Snapshot Instance)</div>
+    <div class="doc-meta">
+      <div class="meta-chip"><strong>Entities</strong> 14 Domain Classes</div>
+      <div class="meta-chip"><strong>Relationships</strong> 15 Mapped</div>
+      <div class="meta-chip"><strong>Multiplicities</strong> 1:1 · 1:N · M:N</div>
+      <div class="meta-chip"><strong>Relationship Types</strong> Association · Composition · Aggregation</div>
+      <div class="meta-chip"><strong>Object Snapshot</strong> Case #CS-2024-0891</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ §1 DOMAIN ENTITY CATALOGUE ═══════════════════ -->
+<div class="section" id="s1">
+  <div class="section-hdr" onclick="tog('s1')">
+    <div class="sec-id">§ 1</div>
+    <div class="sec-title">Domain Entity Catalogue</div>
+    <div class="sec-toggle">▾</div>
+  </div>
+  <div class="sec-body">
+    <table class="cat-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Entity</th><th>Category</th><th>Real-World Concept</th><th>Key Attributes (sample)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="entity-id">E-01</span></td>
+          <td><strong>Citizen</strong></td>
+          <td><span class="badge badge-human">Human Actor</span></td>
+          <td>Any Indian citizen who submits a report about a suspected fake account. Has no system login; identified by mobile/email for OTP.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">citizenId, name, mobile, email, reportCount</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-02</span></td>
+          <td><strong>Officer</strong></td>
+          <td><span class="badge badge-human">Human Actor</span></td>
+          <td>Authenticated agency analyst or senior officer who reviews cases, sends takedowns and generates legal reports.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">officerId, employeeId, name, email, designation, isActive</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-03</span></td>
+          <td><strong>Role</strong></td>
+          <td><span class="badge badge-human">Human Actor</span></td>
+          <td>Permission profile assigned to Officers (Admin / Senior Officer / Analyst / Read-Only). Controls feature access.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">roleId, roleName, permissions[ ]</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-04</span></td>
+          <td><strong>Report</strong></td>
+          <td><span class="badge badge-core">Core Domain</span></td>
+          <td>Citizen submission about a suspected fake account. Entry point into the system; generates a Case upon AI confirmation.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">ticketNumber, platform, suspectUrl, reason, status, screenshots[ ]</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-05</span></td>
+          <td><strong>Case</strong></td>
+          <td><span class="badge badge-core">Core Domain</span></td>
+          <td>The central workflow entity representing one fake account investigation. Aggregates scan results, evidence, takedown requests and audit history.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">caseNumber, priority, status, fakeScore, slaDeadline, createdAt</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-06</span></td>
+          <td><strong>SocialAccount</strong></td>
+          <td><span class="badge badge-detect">Detection</span></td>
+          <td>The suspected fake social media account being analysed. Stores scraped metadata used as ML features.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">username, platformUserId, followerCount, accountAge, postCount, isVerified</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-07</span></td>
+          <td><strong>ScanResult</strong></td>
+          <td><span class="badge badge-detect">Detection</span></td>
+          <td>Output of the AI Detection Engine for one account. Stores composite FakeScore, per-pipeline sub-scores and SHAP explanations.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">fakeScore, metadataScore, imageScore, nlpScore, graphScore, confidence</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-08</span></td>
+          <td><strong>Platform</strong></td>
+          <td><span class="badge badge-plat">Infrastructure</span></td>
+          <td>A registered social media platform (Facebook, Instagram, Twitter, YouTube). Stores API config, grievance email and compliance metrics.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">name, apiEndpoint, grievanceEmail, slaHours, complianceRate</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-09</span></td>
+          <td><strong>SLAConfig</strong></td>
+          <td><span class="badge badge-plat">Infrastructure</span></td>
+          <td>SLA window rules per platform defined under IT Rules 2021 (36 hrs grievance / 72 hrs general). Controls reminder schedule.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">grievanceHours, generalHours, reminder50pct, reminder90pct</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-10</span></td>
+          <td><strong>Evidence</strong></td>
+          <td><span class="badge badge-evid">Evidence &amp; Audit</span></td>
+          <td>A single piece of evidence attached to a Case (screenshot, metadata JSON, image analysis result, NLP report). Has a SHA-256 hash for integrity.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">type, filePath, fileHash, capturedAt</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-11</span></td>
+          <td><strong>BlockchainRecord</strong></td>
+          <td><span class="badge badge-evid">Evidence &amp; Audit</span></td>
+          <td>An immutable Hyperledger Fabric transaction recording a case lifecycle event (EVIDENCE_LOCKED, TAKEDOWN_SENT, PLATFORM_RESPONSE, ESCALATED).</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">txId, eventType, evidenceHash, blockNumber, channelName, timestamp</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-12</span></td>
+          <td><strong>TakedownRequest</strong></td>
+          <td><span class="badge badge-comms">Communication</span></td>
+          <td>A formal delete/suspend request sent by the agency to a social media platform. Tracked for SLA compliance; linked to blockchain record.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">requestNumber, requestedAction, status, sentAt, slaDeadline, reminderCount</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-13</span></td>
+          <td><strong>Notification</strong></td>
+          <td><span class="badge badge-comms">Communication</span></td>
+          <td>System-generated message to Citizens (status updates), Platforms (SLA reminders), or Officers (alerts). Sent via email/SMS/in-app.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">type, channel, recipient, message, sentAt, isDelivered</td>
+        </tr>
+        <tr>
+          <td><span class="entity-id">E-14</span></td>
+          <td><strong>LegalReport</strong></td>
+          <td><span class="badge badge-comms">Communication</span></td>
+          <td>A court-admissible PDF dossier generated for escalated cases. Contains the full case timeline, evidence hashes, blockchain TX IDs and digital signature.</td>
+          <td style="font-family:var(--font-mono);font-size:11px;color:#334155">reportNumber, digitalSignature, blockchainTxId, applicableSections[ ]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ §2 RELATIONSHIP CATALOGUE ═══════════════════ -->
+<div class="section" id="s2">
+  <div class="section-hdr" onclick="tog('s2')">
+    <div class="sec-id">§ 2</div>
+    <div class="sec-title">Relationship Catalogue</div>
+    <div class="sec-toggle">▾</div>
+  </div>
+  <div class="sec-body">
+    <table class="cat-table">
+      <thead>
+        <tr><th>#</th><th>Source Entity</th><th>Relationship</th><th>Target Entity</th><th>Multiplicity</th><th>Type</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-01</td>
+          <td><span class="badge badge-human">Citizen</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">submits</td>
+          <td><span class="badge badge-core">Report</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">N</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">One citizen can submit many reports; each report is from exactly one citizen.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-02</td>
+          <td><span class="badge badge-core">Report</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">generates</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Each verified report creates exactly one Case. A Case may also originate from a proactive scan (no Report).</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-03</td>
+          <td><span class="badge badge-human">Officer</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">manages</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td><span class="mult-badge">M</span> — <span class="mult-badge">N</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">An officer can manage many cases; a case can be reassigned to different officers over its lifecycle. Junction: CaseAssignment.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-04</td>
+          <td><span class="badge badge-human">Officer</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">assignedTo</td>
+          <td><span class="badge badge-human">Role</span></td>
+          <td><span class="mult-badge">N</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Many officers share a role; each officer has exactly one role at a time.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-05</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">investigates</td>
+          <td><span class="badge badge-detect">SocialAccount</span></td>
+          <td><span class="mult-badge">N</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Multiple cases can target the same account (re-opened, re-reported). Each case targets exactly one account.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-06</td>
+          <td><span class="badge badge-detect">SocialAccount</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">hostedOn</td>
+          <td><span class="badge badge-plat">Platform</span></td>
+          <td><span class="mult-badge">N</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">A platform hosts many accounts; each account belongs to exactly one platform.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-07</td>
+          <td><span class="badge badge-plat">Platform</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">governs</td>
+          <td><span class="badge badge-plat">SLAConfig</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-comp">Composition ◆</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Each platform has exactly one SLA configuration. SLAConfig cannot exist without its Platform (strong lifecycle dependency).</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-08</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">hasResult</td>
+          <td><span class="badge badge-detect">ScanResult</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-comp">Composition ◆</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Each case has exactly one scan result. ScanResult is owned by its Case and deleted when the case is purged.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-09</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">contains</td>
+          <td><span class="badge badge-evid">Evidence</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">N</span></td>
+          <td><span class="rel-type rel-comp">Composition ◆</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">A case must have at least one evidence item; multiple evidence types (screenshot, metadata, NLP report, graph data) can exist per case.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-10</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">generates</td>
+          <td><span class="badge badge-comms">TakedownRequest</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">N</span></td>
+          <td><span class="rel-type rel-comp">Composition ◆</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">A case can produce multiple takedown requests (e.g., re-sent after SLA breach). Each request belongs to one case.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-11</td>
+          <td><span class="badge badge-comms">TakedownRequest</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">sentTo</td>
+          <td><span class="badge badge-plat">Platform</span></td>
+          <td><span class="mult-badge">N</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Each takedown request is directed at one platform; a platform receives many takedown requests across all cases.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-12</td>
+          <td><span class="badge badge-evid">Evidence</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">lockedIn</td>
+          <td><span class="badge badge-evid">BlockchainRecord</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Each confirmed evidence bundle produces exactly one blockchain transaction. The hash links the physical evidence to the immutable ledger entry.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-13</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">triggers</td>
+          <td><span class="badge badge-comms">Notification</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">N</span></td>
+          <td><span class="rel-type rel-agg">Aggregation ◇</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">A case generates many notifications (acknowledgment, status update, SLA reminder, escalation alert). Notifications can survive case archival.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-14</td>
+          <td><span class="badge badge-core">Case</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">produces</td>
+          <td><span class="badge badge-comms">LegalReport</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">0..1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">A legal report is optional — generated only for escalated cases. At most one legal report per case at any time.</td>
+        </tr>
+        <tr>
+          <td style="font-family:var(--font-mono);font-size:10px;color:var(--ink4)">R-15</td>
+          <td><span class="badge badge-comms">LegalReport</span></td>
+          <td style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--ink2)">verifiedBy</td>
+          <td><span class="badge badge-evid">BlockchainRecord</span></td>
+          <td><span class="mult-badge">1</span> — <span class="mult-badge">1</span></td>
+          <td><span class="rel-type rel-assoc">Association</span></td>
+          <td style="font-size:11.5px;color:var(--ink3)">Every legal report embeds the blockchain TX ID of the evidence lock transaction to prove tamper-proof integrity in court.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════ §3 + §4 UML DIAGRAMS ═══════════════════ -->
+<div class="section" id="s3">
+  <div class="section-hdr" onclick="tog('s3')">
+    <div class="sec-id">§ 3 – 4</div>
+    <div class="sec-title">UML Diagrams — Class Diagram & Object Diagram</div>
+    <div class="sec-toggle">▾</div>
+  </div>
+  <div class="sec-body">
+    <div class="diagram-tabs">
+      <button class="d-tab active" onclick="showDiag('class-diag', this)">§ 3 · Initial Class Diagram (Domain Model)</button>
+      <button class="d-tab" onclick="showDiag('obj-diag', this)">§ 4 · Object Diagram (Snapshot: Case CS-2024-0891)</button>
+    </div>
+
+    <!-- ═══ CLASS DIAGRAM ═══ -->
+    <div class="d-panel active" id="class-diag">
+      <div class="diagram-scroll" style="padding:24px 24px 0;">
+<svg class="uml-svg" viewBox="0 0 1340 840" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Arrowhead (open) for association -->
+  <marker id="assoc-arr" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polyline points="0 0, 9 3.5, 0 7" fill="none" stroke="#475569" stroke-width="1.4"/>
+  </marker>
+  <!-- Filled diamond for composition -->
+  <marker id="comp-dia" markerWidth="12" markerHeight="8" refX="1" refY="4" orient="auto">
+    <polygon points="0 4, 5 0.5, 10 4, 5 7.5" fill="#1e3a5f" stroke="#1e3a5f" stroke-width="0.5"/>
+  </marker>
+  <!-- Hollow diamond for aggregation -->
+  <marker id="agg-dia" markerWidth="12" markerHeight="8" refX="1" refY="4" orient="auto">
+    <polygon points="0 4, 5 0.5, 10 4, 5 7.5" fill="white" stroke="#64748b" stroke-width="1.2"/>
+  </marker>
+  <!-- Arrow end (for comp/agg) -->
+  <marker id="arr-end" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polyline points="0 0, 9 3.5, 0 7" fill="none" stroke="#475569" stroke-width="1.4"/>
+  </marker>
+</defs>
+
+<!-- ▓▓▓ BACKGROUND ▓▓▓ -->
+<rect width="1340" height="840" fill="#f8fafc"/>
+<pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+  <circle cx="12" cy="12" r="0.8" fill="#c0cfe0"/>
+</pattern>
+<rect width="1340" height="840" fill="url(#dots)"/>
+
+<!-- ▓▓▓ DIAGRAM TITLE ▓▓▓ -->
+<text x="670" y="24" font-family="Cormorant Garamond, serif" font-size="15" font-weight="700" fill="#1e3a5f" text-anchor="middle" letter-spacing="1">FakeShield — Initial Class Diagram (Domain Model) · No Methods · Focus on Attributes and Relationships</text>
+<line x1="60" y1="30" x2="1280" y2="30" stroke="#d0dbe8" stroke-width="0.8"/>
+
+<!-- ════════════════════════════════════════════════════════
+     ROW A — y=46
+     Citizen(x=20) | Role(x=250) | Report(x=490) | SocialAccount(x=770) | Platform(x=1090)
+════════════════════════════════════════════════════════ -->
+
+<!-- ── E-01: Citizen ── x=20, y=46, w=200, h=148 -->
+<g id="Citizen">
+  <rect x="20" y="46" width="200" height="148" rx="3" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <rect x="20" y="46" width="200" height="28" rx="3" fill="#7c3a0e"/>
+  <rect x="20" y="66" width="200" height="8" fill="#7c3a0e"/>
+  <text x="120" y="64" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Citizen</text>
+  <line x1="20" y1="74" x2="220" y2="74" stroke="#d97706" stroke-width="1"/>
+  <text x="30" y="90"  font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– citizenId : UUID</text>
+  <text x="30" y="107" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– name : String</text>
+  <text x="30" y="124" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– mobile : String</text>
+  <text x="30" y="141" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– email : String</text>
+  <text x="30" y="158" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– reportCount : Integer</text>
+  <text x="30" y="175" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– registeredAt : DateTime</text>
+</g>
+
+<!-- ── E-03: Role ── x=250, y=46, w=200, h=111 -->
+<g id="Role">
+  <rect x="250" y="46" width="200" height="111" rx="3" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <rect x="250" y="46" width="200" height="28" rx="3" fill="#7c3a0e"/>
+  <rect x="250" y="66" width="200" height="8" fill="#7c3a0e"/>
+  <text x="350" y="64" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Role</text>
+  <line x1="250" y1="74" x2="450" y2="74" stroke="#d97706" stroke-width="1"/>
+  <text x="260" y="90"  font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– roleId : UUID</text>
+  <text x="260" y="107" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– roleName : Enum</text>
+  <text x="260" y="124" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– permissions : String[ ]</text>
+  <text x="260" y="141" font-family="Fira Code, monospace" font-size="9.5" fill="#78350f">  {ADMIN|SENR|ANALYST</text>
+  <text x="260" y="152" font-family="Fira Code, monospace" font-size="9.5" fill="#78350f">   |READ_ONLY}</text>
+</g>
+
+<!-- ── E-04: Report ── x=490, y=46, w=220, h=180 -->
+<g id="Report">
+  <rect x="490" y="46" width="220" height="180" rx="3" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="490" y="46" width="220" height="28" rx="3" fill="#1e3a5f"/>
+  <rect x="490" y="66" width="220" height="8" fill="#1e3a5f"/>
+  <text x="600" y="64" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Report</text>
+  <line x1="490" y1="74" x2="710" y2="74" stroke="#3b82f6" stroke-width="1"/>
+  <text x="500" y="90"  font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– reportId : UUID</text>
+  <text x="500" y="107" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– ticketNumber : String</text>
+  <text x="500" y="124" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– platform : PlatformEnum</text>
+  <text x="500" y="141" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– suspectUrl : String</text>
+  <text x="500" y="158" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– reason : ReasonEnum</text>
+  <text x="500" y="175" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– status : StatusEnum</text>
+  <text x="500" y="192" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– screenshots : String[ ]</text>
+  <text x="500" y="209" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– submittedAt : DateTime</text>
+</g>
+
+<!-- ── E-06: SocialAccount ── x=775, y=46, w=220, h=214 -->
+<g id="SocialAccount">
+  <rect x="775" y="46" width="220" height="214" rx="3" fill="#f0fdfa" stroke="#14b8a6" stroke-width="1.5"/>
+  <rect x="775" y="46" width="220" height="28" rx="3" fill="#115e59"/>
+  <rect x="775" y="66" width="220" height="8" fill="#115e59"/>
+  <text x="885" y="64" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">SocialAccount</text>
+  <line x1="775" y1="74" x2="995" y2="74" stroke="#14b8a6" stroke-width="1"/>
+  <text x="785" y="90"  font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– accountId : UUID</text>
+  <text x="785" y="107" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– platformUserId : String</text>
+  <text x="785" y="124" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– username : String</text>
+  <text x="785" y="141" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– profileUrl : String</text>
+  <text x="785" y="158" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– accountAge : Integer</text>
+  <text x="785" y="175" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– followerCount : Integer</text>
+  <text x="785" y="192" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– followingCount : Integer</text>
+  <text x="785" y="209" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– postCount : Integer</text>
+  <text x="785" y="226" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– isVerified : Boolean</text>
+  <text x="785" y="243" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– bioText : String</text>
+</g>
+
+<!-- ── E-08: Platform ── x=1060, y=46, w=215, h=131 -->
+<g id="Platform">
+  <rect x="1060" y="46" width="215" height="131" rx="3" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <rect x="1060" y="46" width="215" height="28" rx="3" fill="#334155"/>
+  <rect x="1060" y="66" width="215" height="8" fill="#334155"/>
+  <text x="1167" y="64" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Platform</text>
+  <line x1="1060" y1="74" x2="1275" y2="74" stroke="#64748b" stroke-width="1"/>
+  <text x="1070" y="90"  font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– platformId : UUID</text>
+  <text x="1070" y="107" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– name : PlatformEnum</text>
+  <text x="1070" y="124" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– apiEndpoint : String</text>
+  <text x="1070" y="141" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– grievanceEmail : String</text>
+  <text x="1070" y="158" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– slaHours : Integer</text>
+  <text x="1070" y="170" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– complianceRate : Float</text>
+</g>
+
+
+<!-- ════════════════════════════════════════════════════════
+     ROW B — y=310
+     Officer(x=20) | Case(x=490) | ScanResult(x=775) | SLAConfig(x=1060)
+════════════════════════════════════════════════════════ -->
+
+<!-- ── E-02: Officer ── x=20, y=320, w=200, h=166 -->
+<g id="Officer">
+  <rect x="20" y="320" width="200" height="166" rx="3" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+  <rect x="20" y="320" width="200" height="28" rx="3" fill="#7c3a0e"/>
+  <rect x="20" y="340" width="200" height="8" fill="#7c3a0e"/>
+  <text x="120" y="338" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Officer</text>
+  <line x1="20" y1="348" x2="220" y2="348" stroke="#d97706" stroke-width="1"/>
+  <text x="30" y="364" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– officerId : UUID</text>
+  <text x="30" y="381" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– employeeId : String</text>
+  <text x="30" y="398" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– name : String</text>
+  <text x="30" y="415" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– email : String</text>
+  <text x="30" y="432" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– designation : String</text>
+  <text x="30" y="449" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– isActive : Boolean</text>
+  <text x="30" y="466" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– createdAt : DateTime</text>
+  <text x="30" y="479" font-family="Fira Code, monospace" font-size="9.5" fill="#451a03">– lastLogin : DateTime</text>
+</g>
+
+<!-- ── E-05: Case ── x=490, y=320, w=220, h=183 -->
+<g id="Case">
+  <rect x="490" y="320" width="220" height="183" rx="3" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="490" y="320" width="220" height="28" rx="3" fill="#1e3a5f"/>
+  <rect x="490" y="340" width="220" height="8" fill="#1e3a5f"/>
+  <text x="600" y="338" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Case</text>
+  <line x1="490" y1="348" x2="710" y2="348" stroke="#3b82f6" stroke-width="1"/>
+  <text x="500" y="364" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– caseId : UUID</text>
+  <text x="500" y="381" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– caseNumber : String</text>
+  <text x="500" y="398" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– priority : PriorityEnum</text>
+  <text x="500" y="415" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– status : CaseStatusEnum</text>
+  <text x="500" y="432" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– fakeScore : Decimal</text>
+  <text x="500" y="449" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– slaDeadline : DateTime</text>
+  <text x="500" y="466" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– createdAt : DateTime</text>
+  <text x="500" y="483" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– closedAt : DateTime?</text>
+  <text x="500" y="496" font-family="Fira Code, monospace" font-size="9.5" fill="#1e3a5f">– officerNotes : String</text>
+</g>
+
+<!-- ── E-07: ScanResult ── x=775, y=320, w=220, h=183 -->
+<g id="ScanResult">
+  <rect x="775" y="320" width="220" height="183" rx="3" fill="#f0fdfa" stroke="#14b8a6" stroke-width="1.5"/>
+  <rect x="775" y="320" width="220" height="28" rx="3" fill="#115e59"/>
+  <rect x="775" y="340" width="220" height="8" fill="#115e59"/>
+  <text x="885" y="338" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">ScanResult</text>
+  <line x1="775" y1="348" x2="995" y2="348" stroke="#14b8a6" stroke-width="1"/>
+  <text x="785" y="364" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– scanId : UUID</text>
+  <text x="785" y="381" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– fakeScore : Decimal</text>
+  <text x="785" y="398" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– metadataScore : Decimal</text>
+  <text x="785" y="415" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– imageScore : Decimal</text>
+  <text x="785" y="432" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– nlpScore : Decimal</text>
+  <text x="785" y="449" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– graphScore : Decimal</text>
+  <text x="785" y="466" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– confidence : ConfEnum</text>
+  <text x="785" y="483" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– topFeatures : String[ ]</text>
+  <text x="785" y="496" font-family="Fira Code, monospace" font-size="9.5" fill="#134e4a">– durationSeconds : Int</text>
+</g>
+
+<!-- ── E-09: SLAConfig ── x=1060, y=310, w=215, h=114 -->
+<g id="SLAConfig">
+  <rect x="1060" y="310" width="215" height="114" rx="3" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <rect x="1060" y="310" width="215" height="28" rx="3" fill="#334155"/>
+  <rect x="1060" y="330" width="215" height="8" fill="#334155"/>
+  <text x="1167" y="328" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">SLAConfig</text>
+  <line x1="1060" y1="338" x2="1275" y2="338" stroke="#64748b" stroke-width="1"/>
+  <text x="1070" y="354" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– configId : UUID</text>
+  <text x="1070" y="371" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– grievanceHours : Integer</text>
+  <text x="1070" y="388" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– generalHours : Integer</text>
+  <text x="1070" y="405" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– reminder50pct : Boolean</text>
+  <text x="1070" y="418" font-family="Fira Code, monospace" font-size="9.5" fill="#1e293b">– reminder90pct : Boolean</text>
+</g>
+
+
+<!-- ════════════════════════════════════════════════════════
+     ROW C — y=560
+     Evidence(x=20) | BlockchainRecord(x=270) | TakedownRequest(x=540) | Notification(x=815) | LegalReport(x=1070)
+════════════════════════════════════════════════════════ -->
+
+<!-- ── E-10: Evidence ── x=20, y=560, w=210, h=131 -->
+<g id="Evidence">
+  <rect x="20" y="560" width="210" height="131" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <rect x="20" y="560" width="210" height="28" rx="3" fill="#4c1d95"/>
+  <rect x="20" y="580" width="210" height="8" fill="#4c1d95"/>
+  <text x="125" y="578" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Evidence</text>
+  <line x1="20" y1="588" x2="230" y2="588" stroke="#7c3aed" stroke-width="1"/>
+  <text x="30" y="604" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– evidenceId : UUID</text>
+  <text x="30" y="621" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– type : EvidenceEnum</text>
+  <text x="30" y="638" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– filePath : String</text>
+  <text x="30" y="655" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– fileHash : String</text>
+  <text x="30" y="672" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– capturedAt : DateTime</text>
+  <text x="30" y="684" font-family="Fira Code, monospace" font-size="9.5" fill="#5b21b6">  {SCREENSHOT|METADATA</text>
+</g>
+
+<!-- ── E-11: BlockchainRecord ── x=270, y=560, w=220, h=165 -->
+<g id="BlockchainRecord">
+  <rect x="270" y="560" width="220" height="165" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <rect x="270" y="560" width="220" height="28" rx="3" fill="#4c1d95"/>
+  <rect x="270" y="580" width="220" height="8" fill="#4c1d95"/>
+  <text x="380" y="578" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">BlockchainRecord</text>
+  <line x1="270" y1="588" x2="490" y2="588" stroke="#7c3aed" stroke-width="1"/>
+  <text x="280" y="604" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– txId : String</text>
+  <text x="280" y="621" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– eventType : EventEnum</text>
+  <text x="280" y="638" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– evidenceHash : String</text>
+  <text x="280" y="655" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– actorId : String</text>
+  <text x="280" y="672" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– timestamp : DateTime</text>
+  <text x="280" y="689" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– blockNumber : Long</text>
+  <text x="280" y="706" font-family="Fira Code, monospace" font-size="9.5" fill="#2e1065">– channelName : String</text>
+  <text x="280" y="718" font-family="Fira Code, monospace" font-size="9.5" fill="#5b21b6">  {Hyperledger Fabric}</text>
+</g>
+
+<!-- ── E-12: TakedownRequest ── x=540, y=560, w=220, h=183 -->
+<g id="TakedownRequest">
+  <rect x="540" y="560" width="220" height="183" rx="3" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <rect x="540" y="560" width="220" height="28" rx="3" fill="#7f1d1d"/>
+  <rect x="540" y="580" width="220" height="8" fill="#7f1d1d"/>
+  <text x="650" y="578" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">TakedownRequest</text>
+  <line x1="540" y1="588" x2="760" y2="588" stroke="#e11d48" stroke-width="1"/>
+  <text x="550" y="604" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– requestId : UUID</text>
+  <text x="550" y="621" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– requestNumber : String</text>
+  <text x="550" y="638" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– requestedAction : Enum</text>
+  <text x="550" y="655" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– status : RequestStatusEnum</text>
+  <text x="550" y="672" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– sentAt : DateTime</text>
+  <text x="550" y="689" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– responseAt : DateTime?</text>
+  <text x="550" y="706" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– slaDeadline : DateTime</text>
+  <text x="550" y="723" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– reminderCount : Integer</text>
+  <text x="550" y="735" font-family="Fira Code, monospace" font-size="9.5" fill="#9f1239">  {DELETE|SUSPEND|REVIEW}</text>
+</g>
+
+<!-- ── E-13: Notification ── x=815, y=560, w=215, h=148 -->
+<g id="Notification">
+  <rect x="815" y="560" width="215" height="148" rx="3" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <rect x="815" y="560" width="215" height="28" rx="3" fill="#7f1d1d"/>
+  <rect x="815" y="580" width="215" height="8" fill="#7f1d1d"/>
+  <text x="922" y="578" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">Notification</text>
+  <line x1="815" y1="588" x2="1030" y2="588" stroke="#e11d48" stroke-width="1"/>
+  <text x="825" y="604" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– notifId : UUID</text>
+  <text x="825" y="621" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– type : NotifTypeEnum</text>
+  <text x="825" y="638" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– channel : ChannelEnum</text>
+  <text x="825" y="655" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– recipient : String</text>
+  <text x="825" y="672" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– message : String</text>
+  <text x="825" y="689" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– sentAt : DateTime</text>
+  <text x="825" y="706" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– isDelivered : Boolean</text>
+</g>
+
+<!-- ── E-14: LegalReport ── x=1065, y=560, w=215, h=148 -->
+<g id="LegalReport">
+  <rect x="1065" y="560" width="215" height="148" rx="3" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+  <rect x="1065" y="560" width="215" height="28" rx="3" fill="#7f1d1d"/>
+  <rect x="1065" y="580" width="215" height="8" fill="#7f1d1d"/>
+  <text x="1172" y="578" font-family="Fira Code, monospace" font-size="10.5" font-weight="600" fill="white" text-anchor="middle">LegalReport</text>
+  <line x1="1065" y1="588" x2="1280" y2="588" stroke="#e11d48" stroke-width="1"/>
+  <text x="1075" y="604" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– legalRptId : UUID</text>
+  <text x="1075" y="621" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– reportNumber : String</text>
+  <text x="1075" y="638" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– generatedAt : DateTime</text>
+  <text x="1075" y="655" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– digitalSignature : String</text>
+  <text x="1075" y="672" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– blockchainTxId : String</text>
+  <text x="1075" y="689" font-family="Fira Code, monospace" font-size="9.5" fill="#450a0a">– pdfPath : String</text>
+  <text x="1075" y="706" font-family="Fira Code, monospace" font-size="9.5" fill="#9f1239">– applicableSections:List</text>
+</g>
+
+
+<!-- ═══════════════ RELATIONSHIP LINES ═══════════════ -->
+
+<!-- R-01: Citizen(1) → Report(N) submits
+     Citizen right(220,114) → Report left(490,132) -->
+<path d="M 220 114 H 355 V 132 H 490" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#assoc-arr)"/>
+<text x="310" y="107" font-family="Fira Code, monospace" font-size="9" fill="#475569" text-anchor="middle">submits</text>
+<text x="230" y="110" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#1e3a5f">1</text>
+<text x="476" y="127" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#1e3a5f">N</text>
+
+<!-- R-02: Report(1) → Case(1) generates
+     Report bottom-center(600,226) → Case top-center(600,320) -->
+<path d="M 600 226 V 320" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#assoc-arr)"/>
+<text x="617" y="278" font-family="Fira Code, monospace" font-size="9" fill="#475569">generates</text>
+<text x="609" y="243" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#1e3a5f">1</text>
+<text x="609" y="312" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#1e3a5f">1</text>
+
+<!-- R-03: Officer(N) ↔ Case(M) manages
+     Officer right(220,393) → Case left(490,410) -->
+<path d="M 220 393 H 355 V 410 H 490" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#assoc-arr)"/>
+<text x="320" y="385" font-family="Fira Code, monospace" font-size="9" fill="#94a3b8" text-anchor="middle">manages</text>
+<text x="228" y="389" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7c3a0e">M</text>
+<text x="476" y="406" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7c3a0e">N</text>
+
+<!-- R-04: Officer(N) → Role(1) assignedTo
+     Officer top(120,320) → Role bottom(350,157) -->
+<path d="M 120 320 V 230 H 350 V 157" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#assoc-arr)"/>
+<text x="200" y="220" font-family="Fira Code, monospace" font-size="9" fill="#475569">assignedTo</text>
+<text x="128" y="316" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7c3a0e">N</text>
+<text x="356" y="168" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7c3a0e">1</text>
+
+<!-- R-05: Case(N) → SocialAccount(1) investigates
+     Case right(710,375) → SocialAccount left(775,190) -->
+<path d="M 710 375 H 742 V 190 H 775" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#assoc-arr)"/>
+<text x="748" y="286" font-family="Fira Code, monospace" font-size="9" fill="#475569" transform="rotate(-90,748,286)" text-anchor="middle">investigates</text>
+<text x="714" y="371" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#115e59">N</text>
+<text x="762" y="186" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#115e59">1</text>
+
+<!-- R-06: SocialAccount(N) → Platform(1) hostedOn
+     SocialAccount right(995,150) → Platform left(1060,112) -->
+<path d="M 995 150 H 1027 V 112 H 1060" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#assoc-arr)"/>
+<text x="1022" y="125" font-family="Fira Code, monospace" font-size="9" fill="#475569" text-anchor="middle">hostedOn</text>
+<text x="999" y="146" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#334155">N</text>
+<text x="1048" y="108" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#334155">1</text>
+
+<!-- R-07: Platform(1) ◆→ SLAConfig(1) governs — COMPOSITION
+     Platform bottom(1167,177) → SLAConfig top(1167,310) -->
+<path d="M 1167 177 V 310" fill="none" stroke="#334155" stroke-width="1.5" marker-start="url(#comp-dia)" marker-end="url(#arr-end)"/>
+<text x="1184" y="250" font-family="Fira Code, monospace" font-size="9" fill="#334155">governs</text>
+<text x="1174" y="195" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#334155">1</text>
+<text x="1174" y="303" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#334155">1</text>
+
+<!-- R-08: Case(1) ◆→ ScanResult(1) hasResult — COMPOSITION
+     Case right(710,440) → ScanResult left(775,440) -->
+<path d="M 710 440 H 775" fill="none" stroke="#1e3a5f" stroke-width="1.5" marker-start="url(#comp-dia)" marker-end="url(#arr-end)"/>
+<text x="742" y="432" font-family="Fira Code, monospace" font-size="9" fill="#1e3a5f" text-anchor="middle">hasResult</text>
+<text x="714" y="458" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#1e3a5f">1</text>
+<text x="760" y="458" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#1e3a5f">1</text>
+
+<!-- R-09: Case(1) ◆→ Evidence(N) contains — COMPOSITION
+     Case left(490,470) → Evidence top(125,560) -->
+<path d="M 490 470 H 380 V 538 H 125 V 560" fill="none" stroke="#4c1d95" stroke-width="1.5" marker-start="url(#comp-dia)" marker-end="url(#arr-end)"/>
+<text x="295" y="530" font-family="Fira Code, monospace" font-size="9" fill="#4c1d95" text-anchor="middle">contains</text>
+<text x="484" y="486" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#4c1d95">1</text>
+<text x="115" y="555" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#4c1d95">N</text>
+
+<!-- R-10: Case(1) ◆→ TakedownRequest(N) generates — COMPOSITION
+     Case bottom(610,503) → TakedownRequest top(650,560) -->
+<path d="M 610 503 V 540 H 650 V 560" fill="none" stroke="#7f1d1d" stroke-width="1.5" marker-start="url(#comp-dia)" marker-end="url(#arr-end)"/>
+<text x="668" y="536" font-family="Fira Code, monospace" font-size="9" fill="#7f1d1d">generates</text>
+<text x="615" y="520" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7f1d1d">1</text>
+<text x="655" y="557" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7f1d1d">N</text>
+
+<!-- R-11: TakedownRequest(N) → Platform(1) sentTo
+     TakedownRequest right(760,600) → up → Platform right-bottom -->
+<path d="M 760 600 H 1310 V 112 H 1275" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#assoc-arr)"/>
+<text x="1020" y="595" font-family="Fira Code, monospace" font-size="9" fill="#94a3b8" text-anchor="middle">sentTo [N→1]</text>
+
+<!-- R-12: Evidence(1) → BlockchainRecord(1) lockedIn
+     Evidence right(230,635) → BlockchainRecord left(270,635) -->
+<path d="M 230 635 H 270" fill="none" stroke="#4c1d95" stroke-width="1.5" marker-end="url(#assoc-arr)"/>
+<text x="250" y="625" font-family="Fira Code, monospace" font-size="9" fill="#4c1d95" text-anchor="middle">lockedIn</text>
+<text x="234" y="651" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#4c1d95">1</text>
+<text x="260" y="651" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#4c1d95">1</text>
+
+<!-- R-13: Case(1) ◇→ Notification(N) triggers — AGGREGATION
+     Case right(710,460) → → Notification top -->
+<path d="M 710 460 H 760 V 540 H 922 V 560" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-start="url(#agg-dia)" marker-end="url(#arr-end)"/>
+<text x="822" y="533" font-family="Fira Code, monospace" font-size="9" fill="#94a3b8" text-anchor="middle">triggers</text>
+<text x="714" y="476" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7f1d1d">1</text>
+<text x="910" y="557" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7f1d1d">N</text>
+
+<!-- R-14: Case(1) → LegalReport(0..1) produces
+     Case right(710,490) → LegalReport top -->
+<path d="M 710 490 H 760 V 540 H 1172 V 560" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="8,3" marker-end="url(#assoc-arr)"/>
+<text x="940" y="533" font-family="Fira Code, monospace" font-size="9" fill="#475569" text-anchor="middle">produces</text>
+<text x="714" y="486" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7f1d1d">1</text>
+<text x="1162" y="557" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#7f1d1d">0..1</text>
+
+<!-- R-15: LegalReport(1) → BlockchainRecord(1) verifiedBy
+     LegalReport left(1065,660) → BlockchainRecord right(490,660) -->
+<path d="M 1065 660 H 492" fill="none" stroke="#4c1d95" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#assoc-arr)"/>
+<text x="780" y="651" font-family="Fira Code, monospace" font-size="9" fill="#4c1d95" text-anchor="middle">verifiedBy</text>
+<text x="1055" y="657" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#4c1d95">1</text>
+<text x="494" y="657" font-family="Fira Code, monospace" font-size="9" font-weight="700" fill="#4c1d95">1</text>
+
+<!-- ══ CATEGORY LEGEND PANEL ══ -->
+<rect x="20" y="760" width="1300" height="66" rx="3" fill="white" stroke="#d0dbe8" stroke-width="1"/>
+<text x="36" y="778" font-family="Fira Code, monospace" font-size="9" font-weight="600" fill="#475569" letter-spacing="1.5">LEGEND :</text>
+<!-- Category dots -->
+<rect x="106" y="768" width="10" height="10" rx="2" fill="#7c3a0e"/>
+<text x="120" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">Human Actor</text>
+<rect x="220" y="768" width="10" height="10" rx="2" fill="#1e3a5f"/>
+<text x="234" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">Core Domain</text>
+<rect x="340" y="768" width="10" height="10" rx="2" fill="#115e59"/>
+<text x="354" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">Detection</text>
+<rect x="432" y="768" width="10" height="10" rx="2" fill="#334155"/>
+<text x="446" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">Platform Infra</text>
+<rect x="558" y="768" width="10" height="10" rx="2" fill="#4c1d95"/>
+<text x="572" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">Evidence / Audit</text>
+<rect x="694" y="768" width="10" height="10" rx="2" fill="#7f1d1d"/>
+<text x="708" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">Communication</text>
+<!-- Line types -->
+<line x1="840" y1="773" x2="870" y2="773" stroke="#1e3a5f" stroke-width="2"/>
+<polygon points="840,770 837,773 840,776" fill="#1e3a5f"/>
+<text x="874" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">◆ Composition</text>
+<line x1="980" y1="773" x2="1010" y2="773" stroke="#64748b" stroke-width="2"/>
+<polygon points="980,770 977,773 980,776" fill="white" stroke="#64748b" stroke-width="1"/>
+<text x="1014" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">◇ Aggregation</text>
+<line x1="1120" y1="773" x2="1150" y2="773" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,2"/>
+<text x="1154" y="778" font-family="Fira Code, monospace" font-size="9" fill="#475569">- - Association</text>
+
+<!-- Line types row 2 -->
+<text x="36" y="818" font-family="Fira Code, monospace" font-size="9" fill="#94a3b8">NOTE: No methods shown (domain model only). Enums shown as {values} inside class body. M:N relationship Officer↔Case uses junction table CaseAssignment in implementation.</text>
+
+</svg>
+      </div>
+      <div class="diagram-label">Fig. 2 — FakeShield Initial Class Diagram · 14 Domain Entities · 15 Relationships (1:1, 1:N, M:N) · Composition ◆ · Aggregation ◇ · Association</div>
+    </div><!-- end class-diag panel -->
+
+
+    <!-- ═══ OBJECT DIAGRAM ═══ -->
+    <div class="d-panel" id="obj-diag">
+      <div style="background:#fff8f0;border-bottom:1px solid #fde68a;padding:12px 24px;display:flex;gap:10px;align-items:center;">
+        <span style="font-size:14px;">📸</span>
+        <div>
+          <span style="font-family:var(--font-mono);font-size:10px;font-weight:600;color:#92400e;letter-spacing:1px;">OBJECT DIAGRAM SNAPSHOT</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:#b45309;margin-left:12px;">System state at 2024-11-15 · Case CS-2024-0891 · Impersonation: @pm_narendramodi_official2 · Status: TAKEDOWN_SENT</span>
+        </div>
+      </div>
+      <div class="diagram-scroll" style="padding:24px 24px 0;">
+<svg class="uml-svg" viewBox="0 0 1250 700" xmlns="http://www.w3.org/2000/svg" style="min-width:1200px;">
+<defs>
+  <marker id="obj-arr" markerWidth="9" markerHeight="6" refX="8" refY="3" orient="auto">
+    <polyline points="0 0, 8 3, 0 6" fill="none" stroke="#64748b" stroke-width="1.3"/>
+  </marker>
+</defs>
+
+<rect width="1250" height="700" fill="#fafaf8"/>
+<pattern id="obj-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+  <circle cx="10" cy="10" r="0.7" fill="#d0cfc0"/>
+</pattern>
+<rect width="1250" height="700" fill="url(#obj-dots)"/>
+
+<text x="625" y="22" font-family="Cormorant Garamond, serif" font-size="14" font-weight="700" fill="#1e3a5f" text-anchor="middle">Object Diagram Snapshot — Case CS-2024-0891 · @pm_narendramodi_official2 · 15 November 2024, 09:24 IST</text>
+<line x1="40" y1="28" x2="1210" y2="28" stroke="#d0dbe8" stroke-width="0.8"/>
+
+<!-- ══════ ROW 1: vikram, rpt891, case891, officer1 ══════ -->
+
+<!-- vikram : Citizen  x=20 y=38 w=190 h=98 -->
+<rect x="20" y="38" width="190" height="98" rx="3" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<rect x="20" y="38" width="190" height="26" rx="3" fill="#fef3c7"/>
+<line x1="20" y1="54" x2="210" y2="54" stroke="#fbbf24" stroke-width="1"/>
+<!-- underlined object name -->
+<text x="115" y="52" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#7c3a0e" text-anchor="middle" text-decoration="underline">vikram : Citizen</text>
+<line x1="36" y1="54" x2="194" y2="54" stroke="#d97706" stroke-width="1"/>
+<text x="30" y="69"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">name = "Vikram Sharma"</text>
+<text x="30" y="82"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">mobile = "9876543210"</text>
+<text x="30" y="95"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">email = "vikram@gmail.com"</text>
+<text x="30" y="108" font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">reportCount = 1</text>
+<text x="30" y="125" font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">registeredAt = 2024-11-14</text>
+
+<!-- rpt891 : Report  x=240 y=38 w=220 h=130 -->
+<rect x="240" y="38" width="220" height="130" rx="3" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+<rect x="240" y="38" width="220" height="26" rx="3" fill="#dbeafe"/>
+<line x1="240" y1="54" x2="460" y2="54" stroke="#93c5fd" stroke-width="1"/>
+<text x="350" y="52" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#1e3a5f" text-anchor="middle">rpt891 : Report</text>
+<line x1="248" y1="54" x2="452" y2="54" stroke="#3b82f6" stroke-width="1"/>
+<text x="250" y="69"  font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">ticketNumber = "FS-2024-00891"</text>
+<text x="250" y="82"  font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">platform = TWITTER</text>
+<text x="250" y="95"  font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">reason = IMPERSONATION</text>
+<text x="250" y="108" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">status = CASE_CREATED</text>
+<text x="250" y="121" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">submittedAt = 2024-11-15</text>
+<text x="250" y="134" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">               09:23:00 IST</text>
+<text x="250" y="160" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">screenshots = ["sc_001.png"]</text>
+
+<!-- case891 : Case  x=490 y=38 w=240 h=155 -->
+<rect x="490" y="38" width="240" height="155" rx="3" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+<rect x="490" y="38" width="240" height="26" rx="3" fill="#bfdbfe"/>
+<line x1="490" y1="54" x2="730" y2="54" stroke="#60a5fa" stroke-width="1"/>
+<text x="610" y="52" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#1e3a5f" text-anchor="middle">case891 : Case   ⚡ ACTIVE</text>
+<line x1="498" y1="54" x2="722" y2="54" stroke="#3b82f6" stroke-width="1.5"/>
+<text x="500" y="69"  font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">caseNumber = "CS-2024-0891"</text>
+<text x="500" y="82"  font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">priority = CRITICAL</text>
+<text x="500" y="95"  font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">status = TAKEDOWN_SENT</text>
+<text x="500" y="108" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">fakeScore = 94.0</text>
+<text x="500" y="121" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">slaDeadline = 2024-11-17</text>
+<text x="500" y="134" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">               09:23 IST</text>
+<text x="500" y="147" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">createdAt = 2024-11-15 09:24</text>
+<text x="500" y="160" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">closedAt = null</text>
+<text x="500" y="186" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">officerNotes = "AI-gen photo</text>
+<text x="500" y="196" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">  confirmed via DeepFace..."</text>
+
+<!-- officer1 : Officer  x=760 y=38 w=200 h=112 -->
+<rect x="760" y="38" width="200" height="112" rx="3" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
+<rect x="760" y="38" width="200" height="26" rx="3" fill="#fef3c7"/>
+<line x1="760" y1="54" x2="960" y2="54" stroke="#fbbf24" stroke-width="1"/>
+<text x="860" y="52" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#7c3a0e" text-anchor="middle">rahul : Officer</text>
+<line x1="768" y1="54" x2="952" y2="54" stroke="#d97706" stroke-width="1"/>
+<text x="770" y="69"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">employeeId = "MEIT-2021-0344"</text>
+<text x="770" y="82"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">name = "Rahul Kumar"</text>
+<text x="770" y="95"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">designation = "Senior Analyst"</text>
+<text x="770" y="108" font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">isActive = true</text>
+<text x="770" y="121" font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">email = "rkumar@meit.gov.in"</text>
+<text x="770" y="138" font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">lastLogin = 2024-11-15 08:55</text>
+
+<!-- role1 : Role  x=985 y=38 w=185 h=82 -->
+<rect x="985" y="38" width="185" height="82" rx="3" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+<rect x="985" y="38" width="185" height="26" rx="3" fill="#fde68a"/>
+<line x1="985" y1="54" x2="1170" y2="54" stroke="#fbbf24" stroke-width="1"/>
+<text x="1077" y="52" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#7c3a0e" text-anchor="middle">analyst : Role</text>
+<line x1="993" y1="54" x2="1162" y2="54" stroke="#d97706" stroke-width="1"/>
+<text x="995" y="69"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">roleName = ANALYST</text>
+<text x="995" y="82"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">permissions = ["SCAN",</text>
+<text x="995" y="95"  font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">  "REVIEW","TAKEDOWN"]</text>
+<text x="995" y="108" font-family="Fira Code, monospace" font-size="8.5" fill="#451a03">roleId = "role-003"</text>
+
+<!-- acct891 : SocialAccount  x=1190 ... Actually move to row 2 -->
+<!-- ══════ ROW 2: scan891, acct891, twitter, ev1, ev2 ══════ -->
+
+<!-- scan891 : ScanResult  x=20 y=260 w=230 h=155 -->
+<rect x="20" y="260" width="230" height="155" rx="3" fill="#f0fdfa" stroke="#14b8a6" stroke-width="1.5"/>
+<rect x="20" y="260" width="230" height="26" rx="3" fill="#ccfbf1"/>
+<line x1="20" y1="276" x2="250" y2="276" stroke="#5eead4" stroke-width="1"/>
+<text x="135" y="274" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#115e59" text-anchor="middle">scan891 : ScanResult</text>
+<line x1="28" y1="276" x2="242" y2="276" stroke="#14b8a6" stroke-width="1"/>
+<text x="30" y="291" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">fakeScore = 94.0</text>
+<text x="30" y="304" font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">metadataScore = 97.0 ▲ TOP</text>
+<text x="30" y="317" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">imageScore = 82.0</text>
+<text x="30" y="330" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">nlpScore = 91.0</text>
+<text x="30" y="343" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">graphScore = 78.0</text>
+<text x="30" y="356" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">confidence = HIGH</text>
+<text x="30" y="369" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">durationSeconds = 18</text>
+<text x="30" y="382" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">topFeatures = ["acctAge=3d",</text>
+<text x="30" y="394" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">  "aiGenPhoto","copyPaste"]</text>
+<text x="30" y="407" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">scannedAt = 2024-11-15 09:24</text>
+
+<!-- acct891 : SocialAccount  x=270 y=260 w=225 h=155 -->
+<rect x="270" y="260" width="225" height="155" rx="3" fill="#f0fdfa" stroke="#14b8a6" stroke-width="1.5"/>
+<rect x="270" y="260" width="225" height="26" rx="3" fill="#ccfbf1"/>
+<line x1="270" y1="276" x2="495" y2="276" stroke="#5eead4" stroke-width="1"/>
+<text x="382" y="274" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#115e59" text-anchor="middle">acct891 : SocialAccount</text>
+<line x1="278" y1="276" x2="487" y2="276" stroke="#14b8a6" stroke-width="1"/>
+<text x="280" y="291" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">username = "@pm_namo_official2"</text>
+<text x="280" y="304" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">platformUserId = "twt_98234721"</text>
+<text x="280" y="317" font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">accountAge = 3   ← days old!</text>
+<text x="280" y="330" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">followerCount = 12300</text>
+<text x="280" y="343" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">followingCount = 340</text>
+<text x="280" y="356" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">postCount = 87</text>
+<text x="280" y="369" font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">isVerified = false</text>
+<text x="280" y="382" font-family="Fira Code, monospace" font-size="8.5" fill="#134e4a">bioText = "Official PM of India"</text>
+<text x="280" y="395" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">lastScannedAt = 2024-11-15</text>
+<text x="280" y="407" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">profileImageUrl = "tw_dp.jpg"</text>
+
+<!-- twitter : Platform  x=520 y=260 w=200 h=115 -->
+<rect x="520" y="260" width="200" height="115" rx="3" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+<rect x="520" y="260" width="200" height="26" rx="3" fill="#e2e8f0"/>
+<line x1="520" y1="276" x2="720" y2="276" stroke="#94a3b8" stroke-width="1"/>
+<text x="620" y="274" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#334155" text-anchor="middle">twitter : Platform</text>
+<line x1="528" y1="276" x2="712" y2="276" stroke="#64748b" stroke-width="1"/>
+<text x="530" y="291" font-family="Fira Code, monospace" font-size="8.5" fill="#1e293b">name = "TWITTER"</text>
+<text x="530" y="304" font-family="Fira Code, monospace" font-size="8.5" fill="#1e293b">slaHours = 24</text>
+<text x="530" y="317" font-family="Fira Code, monospace" font-size="8.5" fill="#1e293b">complianceRate = 0.91</text>
+<text x="530" y="330" font-family="Fira Code, monospace" font-size="8.5" fill="#1e293b">grievanceEmail =</text>
+<text x="530" y="343" font-family="Fira Code, monospace" font-size="8.5" fill="#1e293b"> "legal@twitter.com"</text>
+<text x="530" y="356" font-family="Fira Code, monospace" font-size="8.5" fill="#1e293b">platformId = "plat-002"</text>
+<text x="530" y="369" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">apiEndpoint = "api.twitter..."</text>
+
+<!-- ev1 : Evidence  x=740 y=260 w=210 h=95 -->
+<rect x="740" y="260" width="210" height="95" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="740" y="260" width="210" height="26" rx="3" fill="#ede9fe"/>
+<line x1="740" y1="276" x2="950" y2="276" stroke="#a78bfa" stroke-width="1"/>
+<text x="845" y="274" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#4c1d95" text-anchor="middle">ev1 : Evidence</text>
+<line x1="748" y1="276" x2="942" y2="276" stroke="#7c3aed" stroke-width="1"/>
+<text x="750" y="291" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">type = SCREENSHOT</text>
+<text x="750" y="304" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">fileHash = "a3f7b9c2d1e4f..."</text>
+<text x="750" y="317" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">filePath = "/ev/sc_001.png"</text>
+<text x="750" y="330" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">capturedAt = 2024-11-15</text>
+<text x="750" y="343" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">               09:24:15</text>
+
+<!-- ev2 : Evidence  x=970 y=260 w=210 h=95 -->
+<rect x="970" y="260" width="210" height="95" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="970" y="260" width="210" height="26" rx="3" fill="#ede9fe"/>
+<line x1="970" y1="276" x2="1180" y2="276" stroke="#a78bfa" stroke-width="1"/>
+<text x="1075" y="274" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#4c1d95" text-anchor="middle">ev2 : Evidence</text>
+<line x1="978" y1="276" x2="1172" y2="276" stroke="#7c3aed" stroke-width="1"/>
+<text x="980" y="291" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">type = METADATA_JSON</text>
+<text x="980" y="304" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">fileHash = "b9c241e8f3a7..."</text>
+<text x="980" y="317" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">filePath = "/ev/meta_891.json"</text>
+<text x="980" y="330" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">capturedAt = 2024-11-15</text>
+<text x="980" y="343" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">               09:24:18</text>
+
+<!-- ══════ ROW 3: bc1, bc2, td1 ══════ -->
+
+<!-- bc1 : BlockchainRecord  x=20 y=480 w=230 h=105 -->
+<rect x="20" y="480" width="230" height="105" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="20" y="480" width="230" height="26" rx="3" fill="#ede9fe"/>
+<line x1="20" y1="496" x2="250" y2="496" stroke="#a78bfa" stroke-width="1"/>
+<text x="135" y="494" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#4c1d95" text-anchor="middle">bc1 : BlockchainRecord</text>
+<line x1="28" y1="496" x2="242" y2="496" stroke="#7c3aed" stroke-width="1"/>
+<text x="30" y="511" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">txId = "0x7f3a...c91e"</text>
+<text x="30" y="524" font-family="Fira Code, monospace" font-size="8.5" fill="#16a34a">eventType = EVIDENCE_LOCKED</text>
+<text x="30" y="537" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">blockNumber = 18847</text>
+<text x="30" y="550" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">timestamp = 2024-11-15 09:42</text>
+<text x="30" y="563" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">channelName = "fakeshield-ch"</text>
+<text x="30" y="576" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">evidenceHash = "a3f7b9c2..."</text>
+
+<!-- bc2 : BlockchainRecord  x=270 y=480 w=230 h=105 -->
+<rect x="270" y="480" width="230" height="105" rx="3" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
+<rect x="270" y="480" width="230" height="26" rx="3" fill="#ede9fe"/>
+<line x1="270" y1="496" x2="500" y2="496" stroke="#a78bfa" stroke-width="1"/>
+<text x="385" y="494" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#4c1d95" text-anchor="middle">bc2 : BlockchainRecord</text>
+<line x1="278" y1="496" x2="492" y2="496" stroke="#7c3aed" stroke-width="1"/>
+<text x="280" y="511" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">txId = "0x4b2c...8af1"</text>
+<text x="280" y="524" font-family="Fira Code, monospace" font-size="8.5" fill="#b45309">eventType = TAKEDOWN_SENT</text>
+<text x="280" y="537" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">blockNumber = 18851</text>
+<text x="280" y="550" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">timestamp = 2024-11-15 10:15</text>
+<text x="280" y="563" font-family="Fira Code, monospace" font-size="8.5" fill="#2e1065">channelName = "fakeshield-ch"</text>
+<text x="280" y="576" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">actorId = "MEIT-2021-0344"</text>
+
+<!-- td1 : TakedownRequest  x=525 y=480 w=230 h=120 -->
+<rect x="525" y="480" width="230" height="120" rx="3" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+<rect x="525" y="480" width="230" height="26" rx="3" fill="#ffe4e6"/>
+<line x1="525" y1="496" x2="755" y2="496" stroke="#fda4af" stroke-width="1"/>
+<text x="640" y="494" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#7f1d1d" text-anchor="middle">td1 : TakedownRequest</text>
+<line x1="533" y1="496" x2="747" y2="496" stroke="#e11d48" stroke-width="1"/>
+<text x="535" y="511" font-family="Fira Code, monospace" font-size="8.5" fill="#450a0a">requestNumber = "TR-2024-0891-01"</text>
+<text x="535" y="524" font-family="Fira Code, monospace" font-size="8.5" fill="#450a0a">requestedAction = DELETE</text>
+<text x="535" y="537" font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">status = SENT</text>
+<text x="535" y="550" font-family="Fira Code, monospace" font-size="8.5" fill="#450a0a">sentAt = 2024-11-15 10:15:00</text>
+<text x="535" y="563" font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">slaDeadline = 2024-11-16 10:15</text>
+<text x="535" y="576" font-family="Fira Code, monospace" font-size="8.5" fill="#450a0a">reminderCount = 0</text>
+<text x="535" y="589" font-family="Fira Code, monospace" font-size="8.5" fill="#450a0a">responseAt = null</text>
+
+<!-- ══════ LINK LINES ══════ -->
+
+<!-- vikram → rpt891 : submits -->
+<path d="M 210 87 H 240" fill="none" stroke="#64748b" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="224" y="80" font-family="Fira Code, monospace" font-size="8" fill="#64748b" text-anchor="middle">submits</text>
+
+<!-- rpt891 → case891 : generates -->
+<path d="M 460 103 H 490" fill="none" stroke="#64748b" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="474" y="95" font-family="Fira Code, monospace" font-size="8" fill="#64748b" text-anchor="middle">generates</text>
+
+<!-- rahul → case891 : manages -->
+<path d="M 760 87 H 730" fill="none" stroke="#64748b" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="743" y="79" font-family="Fira Code, monospace" font-size="8" fill="#64748b" text-anchor="middle">manages</text>
+
+<!-- rahul → analyst : hasRole -->
+<path d="M 960 78 H 985" fill="none" stroke="#64748b" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="972" y="70" font-family="Fira Code, monospace" font-size="8" fill="#64748b" text-anchor="middle">hasRole</text>
+
+<!-- case891 → scan891 : hasResult -->
+<path d="M 550 193 V 240 H 135 V 260" fill="none" stroke="#14b8a6" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="155" y="250" font-family="Fira Code, monospace" font-size="8" fill="#14b8a6">hasResult</text>
+
+<!-- case891 → acct891 : investigates -->
+<path d="M 570 193 V 250 H 382 V 260" fill="none" stroke="#14b8a6" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="410" y="250" font-family="Fira Code, monospace" font-size="8" fill="#14b8a6">investigates</text>
+
+<!-- acct891 → twitter : hostedOn -->
+<path d="M 495 355 H 520" fill="none" stroke="#64748b" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="507" y="347" font-family="Fira Code, monospace" font-size="8" fill="#64748b" text-anchor="middle">hostedOn</text>
+
+<!-- case891 → ev1 : contains -->
+<path d="M 660 193 V 250 H 845 V 260" fill="none" stroke="#7c3aed" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="780" y="248" font-family="Fira Code, monospace" font-size="8" fill="#7c3aed">contains</text>
+
+<!-- case891 → ev2 : contains -->
+<path d="M 680 193 V 240 H 1075 V 260" fill="none" stroke="#7c3aed" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="950" y="245" font-family="Fira Code, monospace" font-size="8" fill="#7c3aed">contains</text>
+
+<!-- ev1 → bc1 : lockedIn -->
+<path d="M 845 355 V 460 H 135 V 480" fill="none" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="5,2" marker-end="url(#obj-arr)"/>
+<text x="180" y="470" font-family="Fira Code, monospace" font-size="8" fill="#7c3aed">lockedIn</text>
+
+<!-- case891 → td1 : generates -->
+<path d="M 640 193 V 460 H 640 V 480" fill="none" stroke="#e11d48" stroke-width="1.3" marker-end="url(#obj-arr)"/>
+<text x="655" y="468" font-family="Fira Code, monospace" font-size="8" fill="#e11d48">generates</text>
+
+<!-- td1 → twitter : sentTo -->
+<path d="M 620 480 V 450 H 620 V 435 H 620 V 420 H 615 V 400 H 615 V 385 H 615 V 375" fill="none" stroke="none"/>
+<!-- Simpler routing: td1 up to twitter row -->
+<path d="M 640 480 V 420 H 620 V 375" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4,2" marker-end="url(#obj-arr)"/>
+<text x="640" y="438" font-family="Fira Code, monospace" font-size="8" fill="#64748b">sentTo</text>
+
+<!-- td1 → bc2 : recordedIn -->
+<path d="M 580 600 H 500" fill="none" stroke="#7c3aed" stroke-width="1.2" stroke-dasharray="5,2" marker-end="url(#obj-arr)"/>
+<text x="540" y="592" font-family="Fira Code, monospace" font-size="8" fill="#7c3aed" text-anchor="middle">recordedIn</text>
+
+<!-- ══ SNAPSHOT KEY ══ -->
+<rect x="800" y="480" width="430" height="175" rx="4" fill="white" stroke="#d0dbe8" stroke-width="1"/>
+<rect x="800" y="480" width="430" height="28" rx="4" fill="#f1f5f9"/>
+<text x="1015" y="498" font-family="Fira Code, monospace" font-size="10" font-weight="600" fill="#1e3a5f" text-anchor="middle">📊  SNAPSHOT KEY FACTS</text>
+<line x1="800" y1="508" x2="1230" y2="508" stroke="#d0dbe8" stroke-width="0.8"/>
+<text x="816" y="524" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">Account Age    : 3 days old (extreme flag)</text>
+<text x="816" y="538" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">Fake Score     : 94/100 → CRITICAL</text>
+<text x="816" y="552" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">SLA Window     : 24 hours (Twitter)</text>
+<text x="816" y="566" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">Evidence Items : 2 (screenshot + metadata)</text>
+<text x="816" y="580" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">Blockchain TXs : 2 (EVIDENCE_LOCKED + TAKEDOWN_SENT)</text>
+<text x="816" y="594" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">Legal Status   : IT Act §66C — Impersonation</text>
+<text x="816" y="608" font-family="Fira Code, monospace" font-size="8.5" fill="#dc2626">Deadline       : 2024-11-16 10:15 IST (SLA)</text>
+<text x="816" y="622" font-family="Fira Code, monospace" font-size="8.5" fill="#1e3a5f">Officer        : Rahul Kumar (MEIT-2021-0344)</text>
+<text x="816" y="636" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">Chain          : Hyperledger Fabric ch:fakeshield-ch</text>
+<text x="816" y="650" font-family="Fira Code, monospace" font-size="8.5" fill="#6b7280">* All UML objects underlined per notation standard</text>
+
+</svg>
+      </div>
+      <div class="diagram-label">Fig. 3 — Object Diagram Snapshot · Case CS-2024-0891 · @pm_narendramodi_official2 · 2024-11-15 09:24 IST · 12 Object Instances · 13 Association Links</div>
+    </div><!-- end obj-diag panel -->
+
+    <!-- LEGEND ROW -->
+    <div class="legend-row">
+      <div class="legend-item">
+        <svg width="30" height="6"><rect x="0" y="1" width="30" height="4" rx="2" fill="#1e3a5f"/></svg>
+        <span>Composition ◆ (strong ownership)</span>
+      </div>
+      <div class="legend-item">
+        <svg width="30" height="6"><rect x="0" y="1" width="30" height="4" rx="2" fill="#64748b" fill-opacity="0.4" stroke="#64748b" stroke-width="1"/></svg>
+        <span>Aggregation ◇ (weak ownership)</span>
+      </div>
+      <div class="legend-item">
+        <svg width="36" height="6"><line x1="0" y1="3" x2="36" y2="3" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="5,2"/></svg>
+        <span>Association (navigable)</span>
+      </div>
+      <div class="legend-item">
+        <svg width="36" height="6"><line x1="0" y1="3" x2="36" y2="3" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3,2"/></svg>
+        <span>M:N association (dashed)</span>
+      </div>
+      <div class="legend-item">
+        <svg width="22" height="16"><rect x="2" y="2" width="18" height="12" rx="2" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/><text x="5" y="11" font-size="7" font-family="monospace" fill="#7c3a0e">obj</text></svg>
+        <span>Object box (underlined instanceName : ClassName)</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="font-family:var(--font-mono);font-size:10px;color:var(--ink4);text-align:center;padding:14px;letter-spacing:1px;">
+  FakeShield Static Analysis · SRS-SA-002 · 14 Domain Classes · 15 Relationships · Object Snapshot: Case CS-2024-0891 · Blockchain & AI/Cybersecurity
+</div>
+
+</div>
+
+<script>
+function tog(id) {
+  const s = document.getElementById(id);
+  s.classList.toggle('closed');
+}
+
+function showDiag(id, btn) {
+  document.querySelectorAll('.d-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.d-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

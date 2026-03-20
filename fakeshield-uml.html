@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FakeShield — Functional Modeling & Use Case Diagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f2eb;
+  --paper: #faf8f3;
+  --ink: #1a1510;
+  --ink2: #3d3528;
+  --ink3: #6b5f4a;
+  --ink4: #9e8e76;
+  --rule: #d4c9b0;
+  --rule2: #e8e0d0;
+
+  --c1: #1a3a5c;   /* Citizen - deep navy */
+  --c2: #1a4a2e;   /* Officer - forest green */
+  --c3: #4a1a2e;   /* Admin - burgundy */
+  --c4: #3d2800;   /* Law Enforcement - brown */
+  --c5: #1a3a5c;   /* Platform - same navy family */
+  --c6: #0d3d3d;   /* AI Engine - teal */
+  --c7: #2d1a4a;   /* Blockchain - deep purple */
+
+  --uc-bg: #faf8f3;
+  --uc-border: #c8b99a;
+
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-body: 'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--rule2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule2) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* Header */
+.doc-header {
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  padding: 28px 36px;
+  background: var(--paper);
+  margin-bottom: 36px;
+  position: relative;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.doc-header::before {
+  content: 'DOCUMENT · SRS-UC-001';
+  position: absolute;
+  top: -10px; left: 20px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+  letter-spacing: 2px;
+}
+
+.doc-title {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.05;
+  color: var(--ink);
+  letter-spacing: -1px;
+}
+
+.doc-title span { color: var(--c1); }
+
+.doc-subtitle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.doc-meta {
+  display: flex;
+  gap: 32px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-label { font-family: var(--font-mono); font-size: 9px; color: var(--ink4); letter-spacing: 2px; text-transform: uppercase; }
+.meta-val { font-family: var(--font-mono); font-size: 12px; color: var(--ink); font-weight: 500; }
+
+/* Section */
+.section {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  margin-bottom: 24px;
+  box-shadow: 2px 2px 0 var(--rule);
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--rule);
+  background: #f0ece0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink4);
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.section-toggle { margin-left: auto; font-size: 14px; color: var(--ink3); transition: transform 0.2s; }
+.section.collapsed .section-toggle { transform: rotate(-90deg); }
+.section-body { padding: 0; }
+.section.collapsed .section-body { display: none; }
+
+/* Actors Grid */
+.actors-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+.actor-card {
+  padding: 20px 18px;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.15s;
+}
+
+.actor-card:hover { background: #f0ece0; }
+.actor-card:nth-child(4n) { border-right: none; }
+.actor-card:nth-last-child(-n+4) { border-bottom: none; }
+
+.actor-type {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.actor-type.primary { background: rgba(26,58,92,0.1); color: var(--c1); border: 1px solid rgba(26,58,92,0.2); }
+.actor-type.internal { background: rgba(26,74,46,0.1); color: var(--c2); border: 1px solid rgba(26,74,46,0.2); }
+.actor-type.external { background: rgba(74,26,46,0.1); color: var(--c3); border: 1px solid rgba(74,26,46,0.2); }
+.actor-type.system { background: rgba(13,61,61,0.1); color: var(--c6); border: 1px solid rgba(13,61,61,0.2); }
+
+.actor-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+.actor-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.actor-desc { font-size: 11px; color: var(--ink3); line-height: 1.5; }
+
+/* UML Diagram container */
+.diagram-wrap {
+  padding: 24px;
+  overflow-x: auto;
+}
+
+.diagram-caption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink4);
+  text-align: center;
+  margin-top: 12px;
+  letter-spacing: 1px;
+}
+
+/* SVG Diagram Styles */
+.uml-svg { display: block; margin: 0 auto; }
+
+/* Use Case Descriptions */
+.uc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  background: #f0ece0;
+  padding: 12px 16px 0;
+}
+
+.uc-tab {
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink3);
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  letter-spacing: 0.5px;
+  transition: all 0.1s;
+  margin-bottom: -1px;
+  white-space: nowrap;
+}
+
+.uc-tab:hover { color: var(--ink); background: rgba(255,255,255,0.5); }
+.uc-tab.active { background: var(--paper); border-color: var(--rule); color: var(--c1); border-bottom-color: var(--paper); }
+
+.uc-panels { padding: 0; }
+.uc-panel { display: none; }
+.uc-panel.active { display: block; }
+
+.uc-table { width: 100%; border-collapse: collapse; }
+
+.uc-table tr { border-bottom: 1px solid var(--rule2); }
+.uc-table tr:last-child { border-bottom: none; }
+
+.uc-table td {
+  padding: 13px 20px;
+  vertical-align: top;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.uc-table td:first-child {
+  width: 180px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink4);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: #f5f1e8;
+  border-right: 1px solid var(--rule2);
+  white-space: nowrap;
+}
+
+.uc-table td:last-child { color: var(--ink2); }
+
+.flow-steps { display: flex; flex-direction: column; gap: 6px; }
+.flow-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink3);
+  flex-shrink: 0;
+  margin-top: 1px;
+  background: var(--paper);
+}
+
+.step-actor {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  border: 1px solid;
+}
+
+.step-actor.citizen { background: rgba(26,58,92,0.08); color: var(--c1); border-color: rgba(26,58,92,0.2); }
+.step-actor.system { background: rgba(13,61,61,0.08); color: var(--c6); border-color: rgba(13,61,61,0.2); }
+.step-actor.officer { background: rgba(26,74,46,0.08); color: var(--c2); border-color: rgba(26,74,46,0.2); }
+.step-actor.platform { background: rgba(74,26,46,0.08); color: var(--c3); border-color: rgba(74,26,46,0.2); }
+.step-actor.admin { background: rgba(74,26,46,0.08); color: var(--c3); border-color: rgba(74,26,46,0.2); }
+.step-actor.blockchain { background: rgba(45,26,74,0.08); color: var(--c7); border-color: rgba(45,26,74,0.2); }
+.step-actor.law { background: rgba(61,40,0,0.08); color: var(--c4); border-color: rgba(61,40,0,0.2); }
+
+.step-text { font-size: 12.5px; color: var(--ink2); line-height: 1.55; flex: 1; }
+
+.alt-flow {
+  background: rgba(26,58,92,0.04);
+  border-left: 3px solid rgba(26,58,92,0.25);
+  border-radius: 0 3px 3px 0;
+  padding: 8px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink3);
+  font-style: italic;
+}
+
+.alt-flow strong { font-style: normal; font-family: var(--font-mono); font-size: 10px; color: var(--ink3); }
+
+.tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+  margin-right: 4px;
+}
+
+.tag.include { background: rgba(26,74,46,0.08); color: var(--c2); border-color: rgba(26,74,46,0.25); }
+.tag.extend { background: rgba(74,26,46,0.08); color: var(--c3); border-color: rgba(74,26,46,0.25); }
+.tag.precond { background: rgba(200,185,154,0.3); color: var(--ink3); border-color: var(--rule); }
+
+/* Legend */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--rule);
+  background: #f0ece0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink3);
+}
+
+.legend-line {
+  width: 30px;
+  height: 2px;
+}
+
+.legend-oval {
+  width: 40px;
+  height: 20px;
+  border-radius: 10px;
+  border: 2px solid;
+}
+
+/* Summary table */
+.summary-table { width: 100%; border-collapse: collapse; }
+.summary-table th {
+  background: #f0ece0;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: left;
+  border-bottom: 2px solid var(--rule);
+}
+.summary-table td {
+  padding: 10px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--rule2);
+  color: var(--ink2);
+  vertical-align: top;
+}
+.summary-table tr:hover td { background: rgba(240,236,224,0.5); }
+.uc-id { font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--c1); }
+.priority-high { color: #8b1a1a; font-weight: 600; font-family: var(--font-mono); font-size: 10px; }
+.priority-med { color: #6b4a00; font-weight: 600; font-family: var(--font-mono); font-size: 10px; }
+.priority-low { color: #1a4a2e; font-weight: 600; font-family: var(--font-mono); font-size: 10px; }
+
+.print-note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink4);
+  text-align: center;
+  padding: 16px;
+  letter-spacing: 1px;
+}
+
+@media print {
+  body::before { display: none; }
+  .section-toggle { display: none; }
+  .section.collapsed .section-body { display: block !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Document Header -->
+  <div class="doc-header">
+    <div class="doc-title">FakeShield<br><span>Functional Modeling</span></div>
+    <div class="doc-subtitle">Use Case Diagram · Actor Identification · Primary Flow Descriptions</div>
+    <div class="doc-meta">
+      <div class="meta-item"><div class="meta-label">Project</div><div class="meta-val">Fake Social Media Account Detection System</div></div>
+      <div class="meta-item"><div class="meta-label">Document ID</div><div class="meta-val">SRS-UC-001</div></div>
+      <div class="meta-item"><div class="meta-label">Version</div><div class="meta-val">1.0.0</div></div>
+      <div class="meta-item"><div class="meta-label">Domain</div><div class="meta-val">Blockchain & Cybersecurity · AI/ML</div></div>
+      <div class="meta-item"><div class="meta-label">Total Use Cases</div><div class="meta-val">15</div></div>
+      <div class="meta-item"><div class="meta-label">Total Actors</div><div class="meta-val">7</div></div>
+    </div>
+  </div>
+
+
+  <!-- Section 1: Actors -->
+  <div class="section" id="s1">
+    <div class="section-header" onclick="toggleSection('s1')">
+      <div class="section-num">§ 1</div>
+      <div class="section-title">Actor Identification</div>
+      <div class="section-toggle">▾</div>
+    </div>
+    <div class="section-body">
+      <div class="actors-grid">
+        <div class="actor-card">
+          <span class="actor-type primary">Primary · External</span>
+          <span class="actor-icon">🧑‍💻</span>
+          <div class="actor-name">Citizen / Reporter</div>
+          <div class="actor-desc">Any Indian citizen who suspects a fake social media account. Submits reports via the public portal or browser extension. Does not require system login. Represents the public-facing input to the system.</div>
+        </div>
+        <div class="actor-card">
+          <span class="actor-type internal">Primary · Internal</span>
+          <span class="actor-icon">👮</span>
+          <div class="actor-name">Agency Officer (Analyst)</div>
+          <div class="actor-desc">Authenticated officer of the Central Agency (e.g., CERT-In / MeitY Cyber Cell). Reviews flagged accounts, verifies AI results, manages cases, and sends takedown requests to platforms.</div>
+        </div>
+        <div class="actor-card">
+          <span class="actor-type internal">Primary · Internal</span>
+          <span class="actor-icon">👑</span>
+          <div class="actor-name">Senior Officer / Admin</div>
+          <div class="actor-desc">Supervises the agency dashboard, manages officer accounts and roles, reviews analytics, escalates high-profile cases to law enforcement, and generates official legal reports for court proceedings.</div>
+        </div>
+        <div class="actor-card">
+          <span class="actor-type external">Secondary · External</span>
+          <span class="actor-icon">🏛️</span>
+          <div class="actor-name">Law Enforcement Agency</div>
+          <div class="actor-desc">Cyber Crime Cell / Police / CBI. Receives escalated cases involving serious offences (fraud, impersonation at scale, political interference). Acts on blockchain-backed legal reports.</div>
+        </div>
+        <div class="actor-card">
+          <span class="actor-type external">Secondary · External</span>
+          <span class="actor-icon">🌐</span>
+          <div class="actor-name">Social Media Platform</div>
+          <div class="actor-desc">Meta (Facebook/Instagram), Twitter/X, YouTube. Receives formal takedown requests from the agency. Must respond within SLA window (36–72 hrs under IT Rules 2021). Sends deletion/rejection confirmations back.</div>
+        </div>
+        <div class="actor-card">
+          <span class="actor-type system">System · Internal</span>
+          <span class="actor-icon">🤖</span>
+          <div class="actor-name">AI Detection Engine</div>
+          <div class="actor-desc">Automated system actor. Runs ML pipelines: metadata classifier, image deepfake detector, NLP analyzer, and GNN graph analyzer. Produces FakeScore (0–100) and SHAP explainability breakdown. Operates continuously.</div>
+        </div>
+        <div class="actor-card">
+          <span class="actor-type system">System · Internal</span>
+          <span class="actor-icon">⛓️</span>
+          <div class="actor-name">Blockchain Network</div>
+          <div class="actor-desc">Hyperledger Fabric permissioned blockchain. System actor that stores tamper-proof evidence hashes and case lifecycle transactions. Provides immutable audit trail for legal admissibility. Operates via smart contracts.</div>
+        </div>
+        <div class="actor-card" style="background:#f5f2eb;">
+          <div style="padding:10px 0; font-family:var(--font-mono); font-size:11px; color:var(--ink4);">
+            <div style="margin-bottom:12px; font-weight:600; color:var(--ink3);">ACTOR TYPE LEGEND</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div><span style="background:rgba(26,58,92,0.1);color:var(--c1);padding:2px 6px;border-radius:2px;border:1px solid rgba(26,58,92,0.2);">PRIMARY</span> — Directly initiates use cases</div>
+              <div><span style="background:rgba(26,74,46,0.1);color:var(--c2);padding:2px 6px;border-radius:2px;border:1px solid rgba(26,74,46,0.2);">INTERNAL</span> — Authenticated system user</div>
+              <div><span style="background:rgba(74,26,46,0.1);color:var(--c3);padding:2px 6px;border-radius:2px;border:1px solid rgba(74,26,46,0.2);">EXTERNAL</span> — Outside system boundary</div>
+              <div><span style="background:rgba(13,61,61,0.1);color:var(--c6);padding:2px 6px;border-radius:2px;border:1px solid rgba(13,61,61,0.2);">SYSTEM</span> — Automated internal component</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Section 2: Use Case Diagram -->
+  <div class="section" id="s2">
+    <div class="section-header" onclick="toggleSection('s2')">
+      <div class="section-num">§ 2</div>
+      <div class="section-title">Use Case Diagram — System Boundary</div>
+      <div class="section-toggle">▾</div>
+    </div>
+    <div class="section-body">
+      <div class="diagram-wrap">
+        <svg class="uml-svg" viewBox="0 0 1200 860" width="1200" height="860" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#9e8e76"/>
+            </marker>
+            <marker id="arr-dash" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="none" stroke="#9e8e76" stroke-width="1"/>
+            </marker>
+            <marker id="arr-open" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polyline points="0 0, 10 3.5, 0 7" fill="none" stroke="#6b5f4a" stroke-width="1.5"/>
+            </marker>
+          </defs>
+
+          <!-- Background -->
+          <rect width="1200" height="860" fill="#faf8f3"/>
+
+          <!-- Subtle grid -->
+          <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#e8e0d0" stroke-width="0.5"/>
+          </pattern>
+          <rect width="1200" height="860" fill="url(#grid)" opacity="0.5"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- SYSTEM BOUNDARY -->
+          <!-- ══════════════════════════════════════════════ -->
+          <rect x="220" y="40" width="760" height="780" rx="4"
+                fill="rgba(245,242,235,0.6)"
+                stroke="#9e8e76" stroke-width="2" stroke-dasharray="none"/>
+
+          <!-- System boundary label -->
+          <text x="236" y="70" font-family="IBM Plex Mono" font-size="11" fill="#9e8e76" font-weight="600" letter-spacing="2">FAKESHIELD SYSTEM BOUNDARY</text>
+          <line x1="236" y1="74" x2="600" y2="74" stroke="#d4c9b0" stroke-width="0.5"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- EXTERNAL ACTORS — LEFT -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- Citizen -->
+          <g id="actor-citizen">
+            <circle cx="80" cy="195" r="20" fill="none" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="80" y1="215" x2="80" y2="265" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="50" y1="235" x2="110" y2="235" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="80" y1="265" x2="55" y2="295" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="80" y1="265" x2="105" y2="295" stroke="#1a3a5c" stroke-width="2"/>
+            <rect x="22" y="305" width="116" height="22" rx="2" fill="rgba(26,58,92,0.08)" stroke="rgba(26,58,92,0.2)" stroke-width="1"/>
+            <text x="80" y="320" font-family="IBM Plex Mono" font-size="10" fill="#1a3a5c" font-weight="600" text-anchor="middle">Citizen / Reporter</text>
+          </g>
+
+          <!-- Agency Officer -->
+          <g id="actor-officer">
+            <circle cx="80" cy="455" r="20" fill="none" stroke="#1a4a2e" stroke-width="2"/>
+            <line x1="80" y1="475" x2="80" y2="525" stroke="#1a4a2e" stroke-width="2"/>
+            <line x1="50" y1="495" x2="110" y2="495" stroke="#1a4a2e" stroke-width="2"/>
+            <line x1="80" y1="525" x2="55" y2="555" stroke="#1a4a2e" stroke-width="2"/>
+            <line x1="80" y1="525" x2="105" y2="555" stroke="#1a4a2e" stroke-width="2"/>
+            <rect x="16" y="563" width="128" height="22" rx="2" fill="rgba(26,74,46,0.08)" stroke="rgba(26,74,46,0.2)" stroke-width="1"/>
+            <text x="80" y="578" font-family="IBM Plex Mono" font-size="10" fill="#1a4a2e" font-weight="600" text-anchor="middle">Agency Officer</text>
+          </g>
+
+          <!-- Senior Officer / Admin -->
+          <g id="actor-admin">
+            <circle cx="80" cy="700" r="20" fill="none" stroke="#4a1a2e" stroke-width="2"/>
+            <line x1="80" y1="720" x2="80" y2="770" stroke="#4a1a2e" stroke-width="2"/>
+            <line x1="50" y1="740" x2="110" y2="740" stroke="#4a1a2e" stroke-width="2"/>
+            <line x1="80" y1="770" x2="55" y2="800" stroke="#4a1a2e" stroke-width="2"/>
+            <line x1="80" y1="770" x2="105" y2="800" stroke="#4a1a2e" stroke-width="2"/>
+            <rect x="8" y="808" width="144" height="22" rx="2" fill="rgba(74,26,46,0.08)" stroke="rgba(74,26,46,0.2)" stroke-width="1"/>
+            <text x="80" y="823" font-family="IBM Plex Mono" font-size="10" fill="#4a1a2e" font-weight="600" text-anchor="middle">Senior Officer / Admin</text>
+          </g>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- EXTERNAL ACTORS — RIGHT -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- Platform -->
+          <g id="actor-platform">
+            <circle cx="1120" cy="340" r="20" fill="none" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="1120" y1="360" x2="1120" y2="410" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="1090" y1="380" x2="1150" y2="380" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="1120" y1="410" x2="1095" y2="440" stroke="#1a3a5c" stroke-width="2"/>
+            <line x1="1120" y1="410" x2="1145" y2="440" stroke="#1a3a5c" stroke-width="2"/>
+            <rect x="1055" y="450" width="130" height="22" rx="2" fill="rgba(26,58,92,0.08)" stroke="rgba(26,58,92,0.2)" stroke-width="1"/>
+            <text x="1120" y="465" font-family="IBM Plex Mono" font-size="10" fill="#1a3a5c" font-weight="600" text-anchor="middle">Social Media Platform</text>
+          </g>
+
+          <!-- Law Enforcement -->
+          <g id="actor-law">
+            <circle cx="1120" cy="580" r="20" fill="none" stroke="#3d2800" stroke-width="2"/>
+            <line x1="1120" y1="600" x2="1120" y2="650" stroke="#3d2800" stroke-width="2"/>
+            <line x1="1090" y1="620" x2="1150" y2="620" stroke="#3d2800" stroke-width="2"/>
+            <line x1="1120" y1="650" x2="1095" y2="680" stroke="#3d2800" stroke-width="2"/>
+            <line x1="1120" y1="650" x2="1145" y2="680" stroke="#3d2800" stroke-width="2"/>
+            <rect x="1050" y="688" width="140" height="22" rx="2" fill="rgba(61,40,0,0.08)" stroke="rgba(61,40,0,0.2)" stroke-width="1"/>
+            <text x="1120" y="703" font-family="IBM Plex Mono" font-size="10" fill="#3d2800" font-weight="600" text-anchor="middle">Law Enforcement Agency</text>
+          </g>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- USE CASES — TOP ZONE: Citizen / Reporting -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- UC1: Submit Report -->
+          <ellipse cx="430" cy="160" rx="95" ry="26" fill="#faf8f3" stroke="#1a3a5c" stroke-width="1.5"/>
+          <text x="430" y="155" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Submit Fake Account</text>
+          <text x="430" y="170" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Report</text>
+          <text x="430" y="138" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-01</text>
+
+          <!-- UC2: Track Report Status -->
+          <ellipse cx="640" cy="160" rx="90" ry="26" fill="#faf8f3" stroke="#1a3a5c" stroke-width="1.5"/>
+          <text x="640" y="155" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Track Report</text>
+          <text x="640" y="170" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Status</text>
+          <text x="640" y="138" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-02</text>
+
+          <!-- UC3: Login / Authenticate -->
+          <ellipse cx="840" cy="160" rx="80" ry="26" fill="#faf8f3" stroke="#6b5f4a" stroke-width="1.5"/>
+          <text x="840" y="155" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Login /</text>
+          <text x="840" y="170" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Authenticate</text>
+          <text x="840" y="138" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-03</text>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- USE CASES — MIDDLE ZONE: Detection -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- UC4: Scan Account Manually -->
+          <ellipse cx="380" cy="290" rx="95" ry="26" fill="#faf8f3" stroke="#1a4a2e" stroke-width="1.5"/>
+          <text x="380" y="285" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Scan Account</text>
+          <text x="380" y="300" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Manually</text>
+          <text x="380" y="268" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-04</text>
+
+          <!-- UC5: Auto-Detect Fake Account (AI Engine) -->
+          <ellipse cx="620" cy="290" rx="105" ry="26" fill="rgba(13,61,61,0.04)" stroke="#0d3d3d" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="620" y="285" font-family="IBM Plex Sans" font-size="11" fill="#0d3d3d" text-anchor="middle" font-weight="500">Auto-Detect Fake</text>
+          <text x="620" y="300" font-family="IBM Plex Sans" font-size="11" fill="#0d3d3d" text-anchor="middle" font-weight="500">Account [AI Engine]</text>
+          <text x="620" y="268" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-05</text>
+
+          <!-- UC6: View Detection Results -->
+          <ellipse cx="860" cy="290" rx="95" ry="26" fill="#faf8f3" stroke="#1a4a2e" stroke-width="1.5"/>
+          <text x="860" y="285" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">View Detection</text>
+          <text x="860" y="300" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Results</text>
+          <text x="860" y="268" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-06</text>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- USE CASES — MIDDLE-LOWER: Case Management -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- UC7: Review & Verify Case -->
+          <ellipse cx="380" cy="420" rx="95" ry="26" fill="#faf8f3" stroke="#1a4a2e" stroke-width="1.5"/>
+          <text x="380" y="415" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Review &amp; Verify</text>
+          <text x="380" y="430" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Case</text>
+          <text x="380" y="398" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-07</text>
+
+          <!-- UC8: Send Takedown Request -->
+          <ellipse cx="620" cy="420" rx="100" ry="26" fill="#faf8f3" stroke="#1a4a2e" stroke-width="1.5"/>
+          <text x="620" y="415" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Send Takedown</text>
+          <text x="620" y="430" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Request</text>
+          <text x="620" y="398" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-08</text>
+
+          <!-- UC9: Respond to Takedown (Platform) -->
+          <ellipse cx="880" cy="420" rx="100" ry="26" fill="#faf8f3" stroke="#1a3a5c" stroke-width="1.5"/>
+          <text x="880" y="415" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Respond to</text>
+          <text x="880" y="430" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Takedown Request</text>
+          <text x="880" y="398" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-09</text>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- USE CASES — LOWER: SLA, Blockchain, Escalate -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- UC10: Track SLA Compliance -->
+          <ellipse cx="380" cy="555" rx="100" ry="26" fill="#faf8f3" stroke="#1a4a2e" stroke-width="1.5"/>
+          <text x="380" y="550" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Track SLA</text>
+          <text x="380" y="565" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Compliance</text>
+          <text x="380" y="533" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-10</text>
+
+          <!-- UC11: Lock Evidence on Blockchain -->
+          <ellipse cx="620" cy="555" rx="105" ry="26" fill="rgba(45,26,74,0.04)" stroke="#2d1a4a" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <text x="620" y="550" font-family="IBM Plex Sans" font-size="11" fill="#2d1a4a" text-anchor="middle" font-weight="500">Lock Evidence on</text>
+          <text x="620" y="565" font-family="IBM Plex Sans" font-size="11" fill="#2d1a4a" text-anchor="middle" font-weight="500">Blockchain</text>
+          <text x="620" y="533" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-11</text>
+
+          <!-- UC12: Escalate to Law Enforcement -->
+          <ellipse cx="860" cy="555" rx="105" ry="26" fill="#faf8f3" stroke="#4a1a2e" stroke-width="1.5"/>
+          <text x="860" y="550" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Escalate to Law</text>
+          <text x="860" y="565" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Enforcement</text>
+          <text x="860" y="533" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-12</text>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- USE CASES — BOTTOM ZONE: Analytics & Admin -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- UC13: View Analytics Dashboard -->
+          <ellipse cx="380" cy="700" rx="105" ry="26" fill="#faf8f3" stroke="#4a1a2e" stroke-width="1.5"/>
+          <text x="380" y="695" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">View Analytics</text>
+          <text x="380" y="710" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Dashboard</text>
+          <text x="380" y="678" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-13</text>
+
+          <!-- UC14: Generate Legal Report -->
+          <ellipse cx="620" cy="700" rx="100" ry="26" fill="#faf8f3" stroke="#4a1a2e" stroke-width="1.5"/>
+          <text x="620" y="695" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Generate Legal</text>
+          <text x="620" y="710" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Report</text>
+          <text x="620" y="678" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-14</text>
+
+          <!-- UC15: Manage Officers & Roles -->
+          <ellipse cx="860" cy="700" rx="105" ry="26" fill="#faf8f3" stroke="#4a1a2e" stroke-width="1.5"/>
+          <text x="860" y="695" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">Manage Officers</text>
+          <text x="860" y="710" font-family="IBM Plex Sans" font-size="11" fill="#1a1510" text-anchor="middle" font-weight="500">&amp; Roles</text>
+          <text x="860" y="678" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76" text-anchor="middle">UC-15</text>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- ASSOCIATIONS — Citizen -->
+          <!-- ══════════════════════════════════════════════ -->
+          <line x1="100" y1="220" x2="330" y2="195" stroke="#1a3a5c" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="230" x2="548" y2="175" stroke="#1a3a5c" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="250" x2="280" y2="295" stroke="#1a3a5c" stroke-width="1.2" opacity="0.4" stroke-dasharray="4,3" marker-end="url(#arr-open)"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- ASSOCIATIONS — Agency Officer -->
+          <!-- ══════════════════════════════════════════════ -->
+          <line x1="100" y1="460" x2="280" y2="415" stroke="#1a4a2e" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="468" x2="516" y2="428" stroke="#1a4a2e" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="478" x2="276" y2="553" stroke="#1a4a2e" stroke-width="1.2" opacity="0.5" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="488" x2="284" y2="298" stroke="#1a4a2e" stroke-width="1.2" opacity="0.5" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="496" x2="762" y2="297" stroke="#1a4a2e" stroke-width="1.2" opacity="0.4" marker-end="url(#arr-open)"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- ASSOCIATIONS — Senior Officer / Admin -->
+          <!-- ══════════════════════════════════════════════ -->
+          <line x1="100" y1="704" x2="272" y2="704" stroke="#4a1a2e" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="712" x2="517" y2="708" stroke="#4a1a2e" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="720" x2="752" y2="708" stroke="#4a1a2e" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+          <line x1="100" y1="730" x2="752" y2="558" stroke="#4a1a2e" stroke-width="1.2" opacity="0.5" marker-end="url(#arr-open)"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- ASSOCIATIONS — Platform (right side) -->
+          <!-- ══════════════════════════════════════════════ -->
+          <line x1="1055" y1="355" x2="984" y2="418" stroke="#1a3a5c" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- ASSOCIATIONS — Law Enforcement (right side) -->
+          <!-- ══════════════════════════════════════════════ -->
+          <line x1="1055" y1="575" x2="968" y2="560" stroke="#3d2800" stroke-width="1.2" opacity="0.6" marker-end="url(#arr-open)"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- INCLUDE / EXTEND RELATIONSHIPS -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- UC04 → UC05: «include» Scan includes Auto-Detect -->
+          <line x1="476" y1="290" x2="511" y2="290" stroke="#9e8e76" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+          <text x="490" y="282" font-family="IBM Plex Mono" font-size="8" fill="#9e8e76" text-anchor="middle">«include»</text>
+
+          <!-- UC04 → UC06: «include» Scan includes View Results -->
+          <line x1="476" y1="282" x2="762" y2="286" stroke="#9e8e76" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+          <!-- UC07 → UC06: «include» Review includes View Results -->
+          <line x1="462" y1="406" x2="762" y2="295" stroke="#9e8e76" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+          <text x="618" y="344" font-family="IBM Plex Mono" font-size="8" fill="#9e8e76" text-anchor="middle">«include»</text>
+
+          <!-- UC08 → UC11: «include» Takedown includes Lock Evidence -->
+          <line x1="620" y1="447" x2="620" y2="526" stroke="#9e8e76" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+          <text x="637" y="490" font-family="IBM Plex Mono" font-size="8" fill="#9e8e76">«include»</text>
+
+          <!-- UC12 «extend» UC08: Escalate extends Takedown -->
+          <line x1="860" y1="529" x2="722" y2="432" stroke="#9e8e76" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+          <text x="798" y="486" font-family="IBM Plex Mono" font-size="8" fill="#9e8e76" text-anchor="middle">«extend»</text>
+
+          <!-- UC02 «extend» UC01 -->
+          <line x1="549" y1="160" x2="527" y2="160" stroke="#9e8e76" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#arr)"/>
+          <text x="538" y="153" font-family="IBM Plex Mono" font-size="8" fill="#9e8e76" text-anchor="middle">«extend»</text>
+
+          <!-- UC14 → UC11: «include» Legal Report includes Blockchain -->
+          <line x1="620" y1="726" x2="620" y2="582" stroke="#9e8e76" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- SYSTEM ACTORS (bottom inside boundary) -->
+          <!-- ══════════════════════════════════════════════ -->
+
+          <!-- AI Engine label inside -->
+          <rect x="230" y="788" width="130" height="26" rx="3" fill="rgba(13,61,61,0.07)" stroke="#0d3d3d" stroke-width="1"/>
+          <text x="295" y="805" font-family="IBM Plex Mono" font-size="9" fill="#0d3d3d" text-anchor="middle" font-weight="600">🤖  AI Detection Engine</text>
+
+          <!-- Blockchain label inside -->
+          <rect x="390" y="788" width="140" height="26" rx="3" fill="rgba(45,26,74,0.07)" stroke="#2d1a4a" stroke-width="1"/>
+          <text x="460" y="805" font-family="IBM Plex Mono" font-size="9" fill="#2d1a4a" text-anchor="middle" font-weight="600">⛓  Blockchain Network</text>
+
+          <!-- Notes -->
+          <text x="580" y="800" font-family="IBM Plex Mono" font-size="8.5" fill="#9e8e76">System actors operate within the boundary; dashed ovals = automated use cases</text>
+
+          <!-- LEGEND (bottom right) -->
+          <rect x="850" y="782" width="310" height="60" rx="3" fill="#f0ece0" stroke="#d4c9b0" stroke-width="1"/>
+          <text x="866" y="797" font-family="IBM Plex Mono" font-size="8.5" fill="#6b5f4a" font-weight="600">LEGEND</text>
+          <line x1="866" y1="808" x2="896" y2="808" stroke="#6b5f4a" stroke-width="1.5"/>
+          <text x="902" y="812" font-family="IBM Plex Mono" font-size="8" fill="#6b5f4a">Association (Actor → Use Case)</text>
+          <line x1="866" y1="822" x2="896" y2="822" stroke="#9e8e76" stroke-width="1" stroke-dasharray="4,3"/>
+          <text x="902" y="826" font-family="IBM Plex Mono" font-size="8" fill="#6b5f4a">«include» or «extend»</text>
+          <ellipse cx="876" cy="835" rx="12" ry="6" fill="none" stroke="#9e8e76" stroke-width="1"/>
+          <text x="902" y="839" font-family="IBM Plex Mono" font-size="8" fill="#6b5f4a">Use Case (dashed = automated)</text>
+        </svg>
+      </div>
+      <div class="diagram-caption">Fig. 1 — FakeShield UML Use Case Diagram · System Boundary with 7 Actors & 15 Use Cases · Relationships: Association, «include», «extend»</div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <div style="width:30px; height:2px; background:#1a3a5c;"></div>
+          <span style="color:#1a3a5c;">Citizen / Platform Actor</span>
+        </div>
+        <div class="legend-item">
+          <div style="width:30px; height:2px; background:#1a4a2e;"></div>
+          <span style="color:#1a4a2e;">Agency Officer</span>
+        </div>
+        <div class="legend-item">
+          <div style="width:30px; height:2px; background:#4a1a2e;"></div>
+          <span style="color:#4a1a2e;">Senior Officer / Admin</span>
+        </div>
+        <div class="legend-item">
+          <div style="width:30px; height:2px; background:#9e8e76; border-bottom:1px dashed #9e8e76;"></div>
+          <span>«include» / «extend»</span>
+        </div>
+        <div class="legend-item">
+          <div style="width:36px; height:16px; border-radius:8px; border:1.5px dashed #0d3d3d;"></div>
+          <span style="color:#0d3d3d;">Automated Use Case</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Section 3: Use Case Summary -->
+  <div class="section" id="s3">
+    <div class="section-header" onclick="toggleSection('s3')">
+      <div class="section-num">§ 3</div>
+      <div class="section-title">Use Case Summary Index</div>
+      <div class="section-toggle">▾</div>
+    </div>
+    <div class="section-body">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Use Case Name</th><th>Primary Actor(s)</th><th>Category</th><th>Priority</th><th>Relationships</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td class="uc-id">UC-01</td><td>Submit Fake Account Report</td><td>Citizen / Reporter</td><td>Reporting</td><td class="priority-high">HIGH</td><td><span class="tag extend">«extend» UC-02</span></td></tr>
+          <tr><td class="uc-id">UC-02</td><td>Track Report Status</td><td>Citizen / Reporter</td><td>Reporting</td><td class="priority-med">MED</td><td><span class="tag extend">«extend» of UC-01</span></td></tr>
+          <tr><td class="uc-id">UC-03</td><td>Login / Authenticate</td><td>Officer, Admin</td><td>Security</td><td class="priority-high">HIGH</td><td>—</td></tr>
+          <tr><td class="uc-id">UC-04</td><td>Scan Account Manually</td><td>Officer, Citizen (ext.)</td><td>Detection</td><td class="priority-high">HIGH</td><td><span class="tag include">«include» UC-05, UC-06</span></td></tr>
+          <tr><td class="uc-id">UC-05</td><td>Auto-Detect Fake Account</td><td>AI Detection Engine</td><td>Detection</td><td class="priority-high">HIGH</td><td><span class="tag include">«include» of UC-04</span></td></tr>
+          <tr><td class="uc-id">UC-06</td><td>View Detection Results</td><td>Officer</td><td>Detection</td><td class="priority-high">HIGH</td><td><span class="tag include">«include» of UC-04, UC-07</span></td></tr>
+          <tr><td class="uc-id">UC-07</td><td>Review & Verify Case</td><td>Officer</td><td>Case Mgmt</td><td class="priority-high">HIGH</td><td><span class="tag include">«include» UC-06</span></td></tr>
+          <tr><td class="uc-id">UC-08</td><td>Send Takedown Request</td><td>Officer</td><td>Case Mgmt</td><td class="priority-high">HIGH</td><td><span class="tag include">«include» UC-11</span> <span class="tag extend">«extend» by UC-12</span></td></tr>
+          <tr><td class="uc-id">UC-09</td><td>Respond to Takedown Request</td><td>Social Media Platform</td><td>Compliance</td><td class="priority-high">HIGH</td><td>—</td></tr>
+          <tr><td class="uc-id">UC-10</td><td>Track SLA Compliance</td><td>Officer, Senior Officer</td><td>Compliance</td><td class="priority-high">HIGH</td><td>—</td></tr>
+          <tr><td class="uc-id">UC-11</td><td>Lock Evidence on Blockchain</td><td>Blockchain Network</td><td>Audit</td><td class="priority-high">HIGH</td><td><span class="tag include">«include» of UC-08, UC-14</span></td></tr>
+          <tr><td class="uc-id">UC-12</td><td>Escalate to Law Enforcement</td><td>Senior Officer</td><td>Escalation</td><td class="priority-med">MED</td><td><span class="tag extend">«extend» UC-08</span></td></tr>
+          <tr><td class="uc-id">UC-13</td><td>View Analytics Dashboard</td><td>Senior Officer</td><td>Analytics</td><td class="priority-med">MED</td><td>—</td></tr>
+          <tr><td class="uc-id">UC-14</td><td>Generate Legal Report</td><td>Senior Officer</td><td>Legal</td><td class="priority-med">MED</td><td><span class="tag include">«include» UC-11</span></td></tr>
+          <tr><td class="uc-id">UC-15</td><td>Manage Officers & Roles</td><td>Admin</td><td>Admin</td><td class="priority-low">LOW</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- Section 4: Detailed Use Case Descriptions -->
+  <div class="section" id="s4">
+    <div class="section-header" onclick="toggleSection('s4')">
+      <div class="section-num">§ 4</div>
+      <div class="section-title">Detailed Use Case Descriptions — Primary Flows</div>
+      <div class="section-toggle">▾</div>
+    </div>
+    <div class="section-body">
+      <div class="uc-tabs">
+        <div class="uc-tab active" onclick="showUC('uc01', this)">UC-01 Submit Report</div>
+        <div class="uc-tab" onclick="showUC('uc02', this)">UC-02 Track Status</div>
+        <div class="uc-tab" onclick="showUC('uc03', this)">UC-03 Login</div>
+        <div class="uc-tab" onclick="showUC('uc04', this)">UC-04 Manual Scan</div>
+        <div class="uc-tab" onclick="showUC('uc05', this)">UC-05 Auto-Detect</div>
+        <div class="uc-tab" onclick="showUC('uc06', this)">UC-06 View Results</div>
+        <div class="uc-tab" onclick="showUC('uc07', this)">UC-07 Review Case</div>
+        <div class="uc-tab" onclick="showUC('uc08', this)">UC-08 Takedown Request</div>
+        <div class="uc-tab" onclick="showUC('uc09', this)">UC-09 Platform Response</div>
+        <div class="uc-tab" onclick="showUC('uc10', this)">UC-10 SLA Tracking</div>
+        <div class="uc-tab" onclick="showUC('uc11', this)">UC-11 Blockchain Lock</div>
+        <div class="uc-tab" onclick="showUC('uc12', this)">UC-12 Escalate</div>
+        <div class="uc-tab" onclick="showUC('uc13', this)">UC-13 Analytics</div>
+        <div class="uc-tab" onclick="showUC('uc14', this)">UC-14 Legal Report</div>
+        <div class="uc-tab" onclick="showUC('uc15', this)">UC-15 Manage Officers</div>
+      </div>
+
+      <div class="uc-panels">
+
+        <!-- UC-01 -->
+        <div class="uc-panel active" id="uc01">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-01</strong></td></tr>
+            <tr><td>Name</td><td><strong>Submit Fake Account Report</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Citizen / Reporter</span> | Secondary: <span class="tag precond">AI Detection Engine</span></td></tr>
+            <tr><td>Description</td><td>Any citizen who suspects a social media account to be fake can submit a formal report through the public portal or browser extension, without requiring system login. The system automatically initiates an AI scan of the reported account.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Citizen has access to the public reporting portal or browser extension. <span class="tag precond">PRE-2</span> The suspected account is accessible on the respective platform.</td></tr>
+            <tr><td>Postconditions</td><td>A unique ticket number is generated. The reported account is queued for AI scanning. An acknowledgment is sent to the reporter.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor citizen">Citizen</span><div class="step-text">Opens the public reporting portal (fakeshield.gov.in/report) or clicks "Report to Agency" in the browser extension.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor citizen">Citizen</span><div class="step-text">Fills the report form: selects platform (Facebook / Instagram / Twitter), enters the suspicious account URL or @username, selects reason for suspicion (Impersonation / Financial Fraud / Political Misuse / Bot / Other), and optionally uploads screenshots.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor citizen">Citizen</span><div class="step-text">Submits the form. System validates the URL format and checks for duplicate reports on the same account.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">Generates a unique ticket number (e.g., FS-2024-00847) and stores the report in the database with status = "Received".</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">Sends an SMS/email acknowledgment to the reporter with the ticket number and expected processing timeline (48–72 hrs).</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">AI Detection Engine</span><div class="step-text">Automatically initiates a full AI scan on the reported account (triggers UC-05). Scan results are linked to the report.</div></div>
+                <div class="flow-step"><div class="step-num">7</div><span class="step-actor system">System</span><div class="step-text">If FakeScore > 70, the report is auto-escalated to the agency dashboard as a new case. If score is between 40–70, placed in review queue. Below 40, flagged as low priority.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> Duplicate Report — If the account has already been reported, the new report is merged into the existing case and the reporter is informed with the existing ticket number.</div>
+              <div class="alt-flow"><strong>ALT-B:</strong> Invalid URL — If the URL is malformed or the account is no longer accessible, the system notifies the reporter and asks for correction.</div>
+            </td></tr>
+            <tr><td>Exceptions</td><td>Platform API is unavailable → Report is saved, and scan is scheduled for retry within 30 minutes. Reporter is not notified of the API issue.</td></tr>
+            <tr><td>Includes</td><td><span class="tag extend">«extend» UC-02</span> Citizen may subsequently track the report status using the ticket number.</td></tr>
+          </table>
+        </div>
+
+        <!-- UC-02 -->
+        <div class="uc-panel" id="uc02">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-02</strong></td></tr>
+            <tr><td>Name</td><td><strong>Track Report Status</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Citizen / Reporter</span></td></tr>
+            <tr><td>Description</td><td>After submitting a report, a citizen can check the current processing status using the unique ticket number provided at submission time. This is an extension of UC-01 and runs independently on the public portal.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Citizen has a valid ticket number. <span class="tag precond">PRE-2</span> Report exists in the system.</td></tr>
+            <tr><td>Postconditions</td><td>Citizen views the current status and outcome of their report.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor citizen">Citizen</span><div class="step-text">Navigates to "Track My Report" page on the public portal.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor citizen">Citizen</span><div class="step-text">Enters their ticket number (e.g., FS-2024-00847) and their registered mobile/email for OTP verification.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Validates identity via OTP and fetches the case record.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">Displays current status: Received → AI Scan In Progress → Under Agency Review → Takedown Requested → Account Suspended / Closed.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor citizen">Citizen</span><div class="step-text">Views the final outcome if the case is closed (e.g., "Account suspended by Twitter on DD/MM/YYYY").</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> Invalid Ticket — System shows "Ticket not found" error with option to submit a new report.</div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-03 -->
+        <div class="uc-panel" id="uc03">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-03</strong></td></tr>
+            <tr><td>Name</td><td><strong>Login / Authenticate</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Agency Officer</span>, <span class="tag precond">Senior Officer / Admin</span></td></tr>
+            <tr><td>Description</td><td>All internal users (Officers and Admins) must securely authenticate before accessing the agency dashboard. The system uses multi-factor authentication (MFA) with role-based access tokens.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> User account exists in the system. <span class="tag precond">PRE-2</span> User has MFA device registered.</td></tr>
+            <tr><td>Postconditions</td><td>User receives a JWT access token scoped to their role. Dashboard is rendered with appropriate permissions.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor officer">Officer</span><div class="step-text">Navigates to the agency dashboard login page.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor officer">Officer</span><div class="step-text">Enters government email ID and password.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Validates credentials against the encrypted user store. On success, triggers OTP via registered government mobile number.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor officer">Officer</span><div class="step-text">Enters the OTP within 5 minutes.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">Generates a JWT token (8-hour expiry) with role claims (Admin / SeniorOfficer / Analyst / ReadOnly) and logs the login event to audit trail.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">System</span><div class="step-text">Redirects user to role-appropriate dashboard view.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> 3 failed password attempts → Account locked for 30 minutes, security team notified.</div>
+              <div class="alt-flow"><strong>ALT-B:</strong> OTP expired → User must restart login flow.</div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-04 -->
+        <div class="uc-panel" id="uc04">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-04</strong></td></tr>
+            <tr><td>Name</td><td><strong>Scan Account Manually</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Agency Officer</span> | System: <span class="tag precond">AI Detection Engine</span></td></tr>
+            <tr><td>Description</td><td>An authenticated officer (or citizen via browser extension) can manually trigger a full AI-powered scan on any social media account by providing the profile URL or username. The system runs all ML models and returns a comprehensive FakeScore with evidence breakdown.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Officer is authenticated (UC-03). <span class="tag precond">PRE-2</span> Platform API keys are configured and active.</td></tr>
+            <tr><td>Postconditions</td><td>Account is scanned, FakeScore is computed, and results are stored. If score > 70, account is added to the flagged list and a new case is created.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor officer">Officer</span><div class="step-text">Navigates to "Scan Account" page and enters the profile URL (e.g., https://twitter.com/suspected_user) or @username, and selects the platform.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor officer">Officer</span><div class="step-text">Clicks "Run Full Scan". System displays a progress indicator with live status updates (Metadata → Image → NLP → Graph).</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Calls the Detection Service → triggers UC-05 (Auto-Detect). Fetches account data via the platform's API.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">AI Detection Engine</span><div class="step-text">Executes all four ML pipelines in parallel: (a) Metadata Classifier, (b) Image Deepfake Detector, (c) NLP Bio/Post Analyzer, (d) Graph Neural Network analyzer.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">Aggregates sub-scores into a final FakeScore (0–100) and generates a SHAP explanation identifying top contributing features.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">System</span><div class="step-text">Displays results via UC-06 (View Detection Results).</div></div>
+                <div class="flow-step"><div class="step-num">7</div><span class="step-actor system">System</span><div class="step-text">If FakeScore ≥ 70: creates a new Case record (status = "New"), prompts officer to review. Auto-notifies on-duty senior officer for scores ≥ 90.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> Private/Protected Account — System can only analyze publicly available metadata. Image and NLP pipelines may return partial results. Officer is warned that score confidence is reduced.</div>
+              <div class="alt-flow"><strong>ALT-B:</strong> API Rate Limit Reached — Scan is queued for up to 10 minutes and officer is notified to wait.</div>
+            </td></tr>
+            <tr><td>Includes</td><td><span class="tag include">«include» UC-05</span> Auto-Detect Fake Account — mandatory part of every scan. <span class="tag include">«include» UC-06</span> View Detection Results — automatically shown after scan.</td></tr>
+          </table>
+        </div>
+
+        <!-- UC-05 -->
+        <div class="uc-panel" id="uc05">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-05</strong></td></tr>
+            <tr><td>Name</td><td><strong>Auto-Detect Fake Account [AI Engine]</strong></td></tr>
+            <tr><td>Actor(s)</td><td>System Actor: <span class="tag precond">AI Detection Engine</span> (included by UC-04)</td></tr>
+            <tr><td>Description</td><td>The automated AI detection engine executes four parallel ML pipelines on an account and produces a composite FakeScore with confidence levels. This is a system use case triggered internally — not directly initiated by a human actor.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Account metadata and/or public posts are fetchable. <span class="tag precond">PRE-2</span> All ML model files are loaded and healthy.</td></tr>
+            <tr><td>Postconditions</td><td>FakeScore (0–100), sub-scores for each pipeline, and SHAP top-3 feature explanations are stored and returned.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor system">AI Engine</span><div class="step-text"><strong>Pipeline A — Metadata Analysis:</strong> Extracts 40+ features: account age, follower/following ratio, post frequency, username entropy score, verification status, profile picture presence, bio completeness, link in bio, historical name changes. XGBoost classifier returns metadata_score.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">AI Engine</span><div class="step-text"><strong>Pipeline B — Image Analysis:</strong> Downloads profile picture. Runs DeepFace for face detection. Applies FaceForensics++ model to detect AI-generated (GAN) or face-swapped images. ResNet-50 computes image_authenticity_score.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">AI Engine</span><div class="step-text"><strong>Pipeline C — NLP Analysis:</strong> Tokenizes bio and last 20 posts using multilingual BERT. Detects spam language, copy-pasted content, keyword stuffing, incoherence, and suspicious URLs. Computes nlp_score. Supports Hindi, Hinglish, Tamil, Bengali.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">AI Engine</span><div class="step-text"><strong>Pipeline D — Graph Analysis:</strong> Constructs a follower/following network using NetworkX. Runs Graph Neural Network (PyTorch Geometric) to detect bot clusters, inflated follower counts, and co-follower anomalies. Computes graph_score.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">AI Engine</span><div class="step-text">Scorer module applies weighted aggregation: FakeScore = 0.30×metadata + 0.25×image + 0.25×nlp + 0.20×graph. Confidence interval is computed from model certainty.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">AI Engine</span><div class="step-text">SHAP explainer identifies top 3 features driving the score (e.g., "Account created 3 days ago", "Profile image detected as AI-generated", "83% posts are copy-pasted content").</div></div>
+                <div class="flow-step"><div class="step-num">7</div><span class="step-actor system">AI Engine</span><div class="step-text">Returns structured JSON result to the Detection Service. Total execution time target: ≤ 25 seconds.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> One pipeline fails (e.g., image download error) → Remaining pipelines run; score is computed from available data with reduced weight. Confidence label changes to "Partial".</div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-06 -->
+        <div class="uc-panel" id="uc06">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-06</strong></td></tr>
+            <tr><td>Name</td><td><strong>View Detection Results</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Agency Officer</span></td></tr>
+            <tr><td>Description</td><td>An officer views the full AI detection result for a scanned account, including the FakeScore gauge, per-pipeline breakdowns, SHAP feature explanations, and raw evidence data. This is included by both UC-04 and UC-07.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> A scan result exists for the account. <span class="tag precond">PRE-2</span> Officer is authenticated and authorized.</td></tr>
+            <tr><td>Postconditions</td><td>Officer has reviewed the evidence and can proceed to verify the case (UC-07) or mark it as a false positive.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor officer">Officer</span><div class="step-text">Clicks on a flagged account from the dashboard or opens a case.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Renders the Result Panel: (a) FakeScore gauge (radial 0–100 with color zone: green 0–40, yellow 40–70, red 70–100), (b) per-pipeline score bars (Metadata, Image, NLP, Graph), (c) SHAP top-3 explanations in plain language.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor officer">Officer</span><div class="step-text">Reviews evidence section: profile screenshot, account metadata table (age, followers, post count, engagement rate), and sample posts flagged by NLP.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor officer">Officer</span><div class="step-text">Views network graph visualization of follower connections highlighting bot clusters in red.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor officer">Officer</span><div class="step-text">Can click "Compare with Known Fake Accounts" to see similarity score against known fake account database.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor officer">Officer</span><div class="step-text">Chooses next action: "Confirm as Fake" → UC-07, "Mark as False Positive" → case closed, "Re-scan" → UC-04.</div></div>
+              </div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-07 -->
+        <div class="uc-panel" id="uc07">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-07</strong></td></tr>
+            <tr><td>Name</td><td><strong>Review & Verify Case</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Agency Officer</span></td></tr>
+            <tr><td>Description</td><td>The officer performs a human-in-the-loop review of an AI-flagged case. They verify the detection results, add professional judgment, update the case status, and decide on action — send takedown, mark as false positive, or request more information.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Case exists in "New" or "Under Review" status. <span class="tag precond">PRE-2</span> AI scan results are available (UC-06).</td></tr>
+            <tr><td>Postconditions</td><td>Case status is updated. Evidence is locked to blockchain if confirmed. Takedown request is initiated or case is closed as false positive.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor officer">Officer</span><div class="step-text">Opens the case from the Case Board (Kanban view) and is assigned ownership of the case.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor officer">Officer</span><div class="step-text">Reviews AI detection results via UC-06 (included). Examines all evidence panels and SHAP explanations.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor officer">Officer</span><div class="step-text">Manually cross-checks the suspected account against the official/verified account of the impersonated entity using links stored in the FakeShield verified entity database.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor officer">Officer</span><div class="step-text">Adds internal review notes (e.g., "Profile photo verified as AI-generated via reverse image search. Bio matches politician X's official page verbatim.").</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor officer">Officer</span><div class="step-text">Updates case classification: Confirmed Fake / False Positive / Needs More Information / Refer to Senior Officer.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">System</span><div class="step-text">On "Confirmed Fake": triggers UC-11 (Lock Evidence on Blockchain) and moves case to "Takedown Ready" queue.</div></div>
+                <div class="flow-step"><div class="step-num">7</div><span class="step-actor officer">Officer</span><div class="step-text">Proceeds to UC-08 (Send Takedown Request) or escalates to senior officer via UC-12.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Includes</td><td><span class="tag include">«include» UC-06</span> View Detection Results is always performed during review.</td></tr>
+          </table>
+        </div>
+
+        <!-- UC-08 -->
+        <div class="uc-panel" id="uc08">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-08</strong></td></tr>
+            <tr><td>Name</td><td><strong>Send Takedown Request</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Agency Officer</span> | External: <span class="tag precond">Social Media Platform</span></td></tr>
+            <tr><td>Description</td><td>After confirming a fake account, the officer sends a formal, structured takedown request to the respective social media platform via the system. The request follows a legally formatted template under IT Rules 2021 and is tracked for SLA compliance.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Case is in "Takedown Ready" status (confirmed fake via UC-07). <span class="tag precond">PRE-2</span> Platform contact details are configured in the system. <span class="tag precond">PRE-3</span> Evidence is locked on blockchain (UC-11).</td></tr>
+            <tr><td>Postconditions</td><td>Takedown request is sent and logged. SLA countdown begins. Blockchain transaction records the takedown submission.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor officer">Officer</span><div class="step-text">Clicks "Generate Takedown Request" on the confirmed case.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Auto-generates a structured takedown request document including: case ID, blockchain evidence hash, FakeScore, officer ID, legal basis (IT Act Section 66C/66D, IT Rules 2021), platform account URL, and requested action (Delete / Suspend / Review).</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor officer">Officer</span><div class="step-text">Reviews and digitally approves the document. Senior officer counter-approval required if FakeScore < 80 or for politically sensitive cases.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">Sends the request via API/email to the platform's registered Grievance Officer endpoint. Marks case status as "Takedown Requested" with timestamp.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">Starts SLA countdown timer based on platform type: Meta = 36 hrs, Twitter = 24 hrs, YouTube = 72 hrs (per IT Rules 2021).</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">Blockchain</span><div class="step-text">Records "TAKEDOWN_SENT" transaction with timestamp, officer ID, and request hash on Hyperledger Fabric.</div></div>
+                <div class="flow-step"><div class="step-num">7</div><span class="step-actor system">System</span><div class="step-text">Sends automated reminder to platform at 50% and 90% of SLA window. Platform's response is tracked via UC-09.</td></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> Senior officer rejects approval → Case is returned to officer with rejection notes. Must be re-reviewed.</div>
+            </td></tr>
+            <tr><td>Includes</td><td><span class="tag include">«include» UC-11</span> Evidence must be locked on blockchain before sending request.</td></tr>
+            <tr><td>Extended by</td><td><span class="tag extend">«extend» UC-12</span> Escalate to Law Enforcement — if platform fails to comply or case severity warrants it.</td></tr>
+          </table>
+        </div>
+
+        <!-- UC-09 -->
+        <div class="uc-panel" id="uc09">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-09</strong></td></tr>
+            <tr><td>Name</td><td><strong>Respond to Takedown Request</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Social Media Platform</span> (external)</td></tr>
+            <tr><td>Description</td><td>The social media platform (Meta, Twitter, YouTube, etc.) receives the formal takedown request and responds within the SLA window. Their response (Account Deleted / Suspended / Rejected with Reason) is recorded in the system and on the blockchain.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Takedown request has been sent via UC-08. <span class="tag precond">PRE-2</span> Platform has a registered API endpoint or email contact in the system.</td></tr>
+            <tr><td>Postconditions</td><td>Platform response is recorded. SLA compliance status is updated. Blockchain is updated. Case is closed or escalated.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor platform">Platform</span><div class="step-text">Receives the takedown request via API callback or email. Reviews the case documentation and evidence hash.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor platform">Platform</span><div class="step-text">Conducts internal review per their community standards and Terms of Service against the provided evidence.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor platform">Platform</span><div class="step-text">Sends response to FakeShield system: (a) Complied — Account Deleted, (b) Complied — Account Suspended, (c) Rejected — Insufficient Evidence, (d) Rejected — Account Complies with Policy.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">Records response with timestamp. Calculates actual response time vs SLA window. Updates SLA compliance metrics.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor blockchain">Blockchain</span><div class="step-text">Records "PLATFORM_RESPONSE" transaction with outcome code and timestamp on Hyperledger Fabric.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor system">System</span><div class="step-text">If complied: case is closed, reporter is notified. If rejected: case is flagged for senior officer review with rejection reason. If no response within SLA: triggers auto-escalation alert.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> SLA Breached (No Response) — System auto-escalates the case, notifies the senior officer, and generates a non-compliance report under IT Rules 2021 (intermediary liability — Section 79).</div>
+              <div class="alt-flow"><strong>ALT-B:</strong> Partial Action (Account Suspended but not Deleted) — Officer reviews and decides whether this satisfies the request or if further action is needed.</div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-10 -->
+        <div class="uc-panel" id="uc10">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-10</strong></td></tr>
+            <tr><td>Name</td><td><strong>Track SLA Compliance</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Agency Officer</span>, <span class="tag precond">Senior Officer</span> | System: <span class="tag precond">AI Detection Engine</span></td></tr>
+            <tr><td>Description</td><td>Officers and senior officers monitor the SLA compliance of each social media platform in real time. The system automatically sends reminders, flags breaches, and generates compliance reports per platform per month.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Takedown requests have been sent. <span class="tag precond">PRE-2</span> Officer is authenticated.</td></tr>
+            <tr><td>Postconditions</td><td>SLA compliance report is visible. Non-compliant cases are escalated automatically.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor officer">Officer</span><div class="step-text">Opens "Platform SLA" section from the dashboard.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Displays per-platform compliance dashboard: response rate (%), average response time, pending requests, overdue cases (color-coded red/yellow/green).</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Background scheduler runs every hour: checks all open cases against their SLA deadline. Sends automated email reminder to platform at 50% elapsed time.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">At 90% of SLA window: sends urgent notice to platform and alerts the on-duty senior officer.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">At SLA breach: marks case as "SLA_BREACH", records the event on blockchain, and auto-drafts a non-compliance notice under IT Rules 2021 for senior officer review.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor officer">Officer</span><div class="step-text">Can manually override SLA (with reason logged) for diplomatic or technical exceptions.</div></div>
+              </div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-11 -->
+        <div class="uc-panel" id="uc11">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-11</strong></td></tr>
+            <tr><td>Name</td><td><strong>Lock Evidence on Blockchain</strong></td></tr>
+            <tr><td>Actor(s)</td><td>System Actor: <span class="tag precond">Blockchain Network</span> (Hyperledger Fabric)</td></tr>
+            <tr><td>Description</td><td>When a case is confirmed as fake (UC-07) or a takedown is sent (UC-08), the system computes a SHA-256 hash of the entire evidence bundle and submits it as an immutable transaction to the Hyperledger Fabric blockchain. This creates a tamper-proof legal record.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Case has been confirmed or takedown is being sent. <span class="tag precond">PRE-2</span> Fabric network is operational. <span class="tag precond">PRE-3</span> Signing certificate for the agency node is valid.</td></tr>
+            <tr><td>Postconditions</td><td>Immutable blockchain transaction ID is stored in the case record. Evidence is legally auditable.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor system">System</span><div class="step-text">Assembles the evidence bundle: account metadata JSON, profile screenshot (base64), AI score breakdown, officer review notes, platform response (if any), and case timeline.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Computes SHA-256 hash of the serialized evidence bundle. Stores the hash string in the case record's evidence_hash field.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor blockchain">Blockchain Network</span><div class="step-text">Submits a transaction to the Evidence Smart Contract (evidence_contract.go) on Hyperledger Fabric with: {case_id, evidence_hash, actor_id, timestamp, event_type}.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor blockchain">Blockchain Network</span><div class="step-text">Fabric endorses the transaction across peer nodes (agency node + CERT-In observer node), commits to the ledger, and returns a transaction ID (TX_ID).</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">Stores TX_ID in the case record. All subsequent case state changes (Takedown Sent, Platform Responded, Escalated, Closed) are also recorded as blockchain transactions via the SLA smart contract.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor officer">Officer</span><div class="step-text">Can view the full blockchain audit trail from the case page, showing every transaction hash and timestamp in chronological order.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> Fabric network unavailable → Evidence locking is queued with a retry mechanism (3 retries in 5-minute intervals). Case cannot move to "Takedown Ready" until blockchain lock succeeds.</div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-12 -->
+        <div class="uc-panel" id="uc12">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-12</strong></td></tr>
+            <tr><td>Name</td><td><strong>Escalate to Law Enforcement</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Senior Officer</span> | External: <span class="tag precond">Law Enforcement Agency</span></td></tr>
+            <tr><td>Description</td><td>When a fake account case involves serious criminal activity (financial fraud, targeted harassment, political interference, impersonation at scale) OR the platform fails to comply within the SLA, the senior officer escalates the case to the Cyber Crime Cell or CBI with a complete legal dossier backed by the blockchain audit trail.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Case has been confirmed fake (UC-07). <span class="tag precond">PRE-2</span> Evidence is locked on blockchain (UC-11). <span class="tag precond">PRE-3</span> Either: (a) SLA has been breached by platform, or (b) case meets severity threshold for criminal action.</td></tr>
+            <tr><td>Postconditions</td><td>Formal legal dossier sent to law enforcement. Case status updated to "Escalated". Blockchain records the escalation event.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Reviews the case and determines escalation criteria are met (SLA breach, or criminal severity ≥ Level 2 in the internal classification matrix).</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Auto-generates a complete legal dossier PDF including: case summary, AI evidence, officer review notes, blockchain TX history, platform non-compliance record, applicable IPC/BNS sections (66C, 66D, 419, 420, 500 BNS 2023).</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Digitally signs and approves the legal dossier with their PKI-based digital signature.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">Transmits the dossier to the registered Cyber Crime Cell via secure encrypted channel (SFTP or NIC-secured API).</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor law">Law Enforcement</span><div class="step-text">Receives and acknowledges receipt of the dossier. Provides a reference FIR number or acknowledgment code.</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor blockchain">Blockchain</span><div class="step-text">Records "CASE_ESCALATED" transaction with law enforcement reference ID.</div></div>
+                <div class="flow-step"><div class="step-num">7</div><span class="step-actor system">System</span><div class="step-text">Updates case status to "Escalated". Notifies the original reporter (if applicable) that case has been elevated.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Extended by</td><td><span class="tag extend">«extend» of UC-08</span> — Escalation is an optional but possible extension whenever a takedown has been attempted and failed or criminal conduct is confirmed.</td></tr>
+          </table>
+        </div>
+
+        <!-- UC-13 -->
+        <div class="uc-panel" id="uc13">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-13</strong></td></tr>
+            <tr><td>Name</td><td><strong>View Analytics Dashboard</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Senior Officer / Admin</span></td></tr>
+            <tr><td>Description</td><td>The senior officer accesses a comprehensive analytics dashboard showing detection trends, platform compliance rates, officer productivity, geographical distribution of fake accounts, and monthly/quarterly KPIs for reporting to MeitY or Parliament.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Senior officer is authenticated. <span class="tag precond">PRE-2</span> System has processed a minimum of one case.</td></tr>
+            <tr><td>Postconditions</td><td>Officer views dashboards and can export reports in PDF, CSV, or Excel format.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Navigates to the Analytics module. Selects date range (today / this week / this month / custom).</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Renders KPI cards: total accounts flagged, confirmed fake, false positives, takedown success rate, average detection-to-suspension time, SLA compliance per platform.</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Displays trend charts: (a) daily detection volume by platform, (b) fake account category breakdown (Impersonation / Bot / Fraud / Political), (c) geographical heatmap of originating IPs.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Filters data by platform, category, officer, or date range. Views officer-wise case closure rates.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Clicks "Export Monthly Report" to generate a structured PDF/Excel report for Ministry submission.</div></div>
+              </div>
+            </td></tr>
+          </table>
+        </div>
+
+        <!-- UC-14 -->
+        <div class="uc-panel" id="uc14">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-14</strong></td></tr>
+            <tr><td>Name</td><td><strong>Generate Legal Report</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Senior Officer</span> | System: <span class="tag precond">Blockchain Network</span></td></tr>
+            <tr><td>Description</td><td>For cases requiring court proceedings or formal Ministry submissions, a senior officer generates a digitally signed, blockchain-verified legal report that compiles all evidence, timeline, and supporting documentation into a court-admissible PDF dossier.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Case is confirmed and blockchain-locked. <span class="tag precond">PRE-2</span> Senior officer has digital signature certificate.</td></tr>
+            <tr><td>Postconditions</td><td>A legally formatted, digitally signed PDF report is generated with embedded blockchain verification QR code.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Opens a confirmed case and clicks "Generate Legal Report".</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor system">System</span><div class="step-text">Fetches all evidence from the case record and retrieves the full blockchain transaction history for the case from Hyperledger Fabric (UC-11).</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Generates a structured PDF including: executive summary, accused account details, timeline of events, AI score with model explanation, blockchain TX IDs and hashes, officer notes, platform response record, applicable legal sections.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor system">System</span><div class="step-text">Embeds a QR code that links to the blockchain explorer entry, allowing courts to independently verify evidence integrity.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor admin">Senior Officer</span><div class="step-text">Reviews the report and applies digital signature (using government-issued DSC).</div></div>
+                <div class="flow-step"><div class="step-num">6</div><span class="step-actor blockchain">Blockchain</span><div class="step-text">Records "LEGAL_REPORT_GENERATED" transaction. Report hash stored immutably.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Includes</td><td><span class="tag include">«include» UC-11</span> Blockchain evidence retrieval is mandatory for legal report generation.</td></tr>
+          </table>
+        </div>
+
+        <!-- UC-15 -->
+        <div class="uc-panel" id="uc15">
+          <table class="uc-table">
+            <tr><td>Use Case ID</td><td><strong>UC-15</strong></td></tr>
+            <tr><td>Name</td><td><strong>Manage Officers & Roles</strong></td></tr>
+            <tr><td>Actor(s)</td><td>Primary: <span class="tag precond">Admin (Senior Officer)</span></td></tr>
+            <tr><td>Description</td><td>The system administrator manages officer accounts, assigns roles and permissions, deactivates accounts, and sets up two-factor authentication for new users. This governs all internal access to the FakeShield agency system.</td></tr>
+            <tr><td>Preconditions</td><td><span class="tag precond">PRE-1</span> Admin is authenticated with Admin role. <span class="tag precond">PRE-2</span> New officer has a valid government email ID.</td></tr>
+            <tr><td>Postconditions</td><td>Officer account is created/updated/deactivated. Role-based access controls are applied immediately.</td></tr>
+            <tr><td>Main Flow</td><td>
+              <div class="flow-steps">
+                <div class="flow-step"><div class="step-num">1</div><span class="step-actor admin">Admin</span><div class="step-text">Navigates to User Management section.</div></div>
+                <div class="flow-step"><div class="step-num">2</div><span class="step-actor admin">Admin</span><div class="step-text">Clicks "Add Officer" and fills: full name, government email, designation, assigned role (Admin / Senior Officer / Analyst / Read-Only), and assigned platform specialization (optional).</div></div>
+                <div class="flow-step"><div class="step-num">3</div><span class="step-actor system">System</span><div class="step-text">Creates account, sends welcome email with temporary password and MFA setup link. Logs account creation in audit trail.</div></div>
+                <div class="flow-step"><div class="step-num">4</div><span class="step-actor admin">Admin</span><div class="step-text">Can update roles, reassign cases, or deactivate accounts for officers on transfer/leave. All changes are logged immutably.</div></div>
+                <div class="flow-step"><div class="step-num">5</div><span class="step-actor system">System</span><div class="step-text">Role changes take effect immediately — active JWT tokens for that user are invalidated, requiring re-login.</div></div>
+              </div>
+            </td></tr>
+            <tr><td>Alternate Flows</td><td>
+              <div class="alt-flow"><strong>ALT-A:</strong> Email domain is not a registered government domain → System rejects account creation with error "Only .gov.in email addresses are permitted".</div>
+            </td></tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="print-note">FakeShield Functional Model · SRS-UC-001 · All 15 Use Cases across 7 Actors · Blockchain & AI/Cybersecurity Domain · India</div>
+
+</div>
+
+<script>
+function toggleSection(id) {
+  const s = document.getElementById(id);
+  s.classList.toggle('collapsed');
+}
+
+function showUC(id, tab) {
+  document.querySelectorAll('.uc-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.uc-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+  tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FakeShield — Central Agency Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070b12;
+    --surface: #0d1420;
+    --surface2: #111a2e;
+    --surface3: #162035;
+    --border: rgba(99, 179, 237, 0.12);
+    --accent: #00d4ff;
+    --accent2: #ff4d6d;
+    --accent3: #00ff9d;
+    --accent4: #ffd166;
+    --text: #e8f4fd;
+    --text-muted: #6b8aaa;
+    --text-dim: #3a5070;
+    --danger: #ff4d6d;
+    --warning: #ffd166;
+    --safe: #00ff9d;
+    --font: 'Syne', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --glow: 0 0 20px rgba(0, 212, 255, 0.15);
+    --glow-r: 0 0 20px rgba(255, 77, 109, 0.2);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-mark {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-mark span { color: var(--accent); }
+
+  .logo-sub {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  .nav {
+    padding: 16px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-section {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 12px 8px 6px;
+    font-family: var(--mono);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+
+  .nav-item.active {
+    background: rgba(0, 212, 255, 0.08);
+    color: var(--accent);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+  }
+
+  .nav-item .icon { font-size: 15px; width: 20px; text-align: center; }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent2);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-family: var(--mono);
+  }
+
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #0066ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .user-role { font-size: 10px; color: var(--text-muted); font-family: var(--mono); }
+
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    height: 60px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .topbar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .topbar-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    margin-left: 2px;
+  }
+
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--safe);
+    box-shadow: 0 0 6px var(--safe);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .status-label { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+
+  .btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #070b12;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: rgba(0, 212, 255, 0.3); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi-card.blue::before { background: linear-gradient(90deg, var(--accent), transparent); }
+  .kpi-card.red::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .kpi-card.green::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+  .kpi-card.yellow::before { background: linear-gradient(90deg, var(--accent4), transparent); }
+
+  .kpi-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-family: var(--mono);
+  }
+
+  .kpi-value {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    margin: 8px 0 4px;
+    letter-spacing: -1px;
+  }
+
+  .kpi-card.blue .kpi-value { color: var(--accent); }
+  .kpi-card.red .kpi-value { color: var(--accent2); }
+  .kpi-card.green .kpi-value { color: var(--accent3); }
+  .kpi-card.yellow .kpi-value { color: var(--accent4); }
+
+  .kpi-delta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  .kpi-delta .up { color: var(--accent2); }
+  .kpi-delta .down { color: var(--accent3); }
+
+  .kpi-icon {
+    position: absolute;
+    bottom: 14px; right: 14px;
+    font-size: 28px;
+    opacity: 0.12;
+  }
+
+  /* Two-column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 14px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+  /* Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.3px;
+  }
+
+  .panel-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    margin-left: auto;
+  }
+
+  .panel-body { padding: 0; }
+
+  /* Account List */
+  .account-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    animation: slideIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .account-row:hover { background: var(--surface2); }
+  .account-row:last-child { border-bottom: none; }
+
+  .account-row:nth-child(1) { animation-delay: 0.05s; }
+  .account-row:nth-child(2) { animation-delay: 0.1s; }
+  .account-row:nth-child(3) { animation-delay: 0.15s; }
+  .account-row:nth-child(4) { animation-delay: 0.2s; }
+  .account-row:nth-child(5) { animation-delay: 0.25s; }
+
+  .platform-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .platform-icon.fb { background: rgba(24, 119, 242, 0.15); }
+  .platform-icon.ig { background: rgba(225, 48, 108, 0.15); }
+  .platform-icon.tw { background: rgba(0, 172, 238, 0.15); }
+
+  .account-info { flex: 1; min-width: 0; }
+  .account-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .account-meta { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; }
+
+  .score-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+
+  .score-high { background: rgba(255, 77, 109, 0.15); color: var(--accent2); border: 1px solid rgba(255, 77, 109, 0.2); }
+  .score-med { background: rgba(255, 209, 102, 0.15); color: var(--accent4); border: 1px solid rgba(255, 209, 102, 0.2); }
+  .score-low { background: rgba(0, 255, 157, 0.1); color: var(--accent3); border: 1px solid rgba(0, 255, 157, 0.15); }
+
+  .case-badge {
+    font-size: 9px;
+    font-family: var(--mono);
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .badge-new { background: rgba(0, 212, 255, 0.12); color: var(--accent); }
+  .badge-review { background: rgba(255, 209, 102, 0.12); color: var(--accent4); }
+  .badge-escalated { background: rgba(255, 77, 109, 0.12); color: var(--accent2); }
+  .badge-closed { background: rgba(0, 255, 157, 0.1); color: var(--accent3); }
+
+  /* Score Gauge */
+  .gauge-container { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  .selected-account {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .selected-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .selected-url { font-size: 11px; color: var(--text-muted); font-family: var(--mono); margin-top: 3px; }
+
+  .gauge-wrap {
+    position: relative;
+    width: 160px;
+    height: 100px;
+    margin: 0 auto;
+  }
+
+  .gauge-svg { width: 160px; height: 100px; }
+
+  .gauge-number {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+  }
+
+  .gauge-val { font-size: 34px; font-weight: 800; line-height: 1; color: var(--accent2); letter-spacing: -1px; }
+  .gauge-label { font-size: 10px; color: var(--text-muted); font-family: var(--mono); }
+
+  .score-breakdown { display: flex; flex-direction: column; gap: 8px; }
+
+  .breakdown-item { display: flex; flex-direction: column; gap: 4px; }
+
+  .breakdown-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+
+  .breakdown-name { color: var(--text-muted); font-family: var(--mono); }
+  .breakdown-val { color: var(--text); font-weight: 600; font-family: var(--mono); }
+
+  .bar-track {
+    height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .bar-fill.red { background: var(--accent2); }
+  .bar-fill.yellow { background: var(--accent4); }
+  .bar-fill.blue { background: var(--accent); }
+  .bar-fill.green { background: var(--accent3); }
+
+  /* Activity Feed */
+  .feed-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    animation: slideIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  .feed-item:nth-child(1) { animation-delay: 0.05s; }
+  .feed-item:nth-child(2) { animation-delay: 0.1s; }
+  .feed-item:nth-child(3) { animation-delay: 0.15s; }
+  .feed-item:nth-child(4) { animation-delay: 0.2s; }
+  .feed-item:nth-child(5) { animation-delay: 0.25s; }
+
+  .feed-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .feed-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .feed-text strong { color: var(--text); font-weight: 600; }
+  .feed-time { font-size: 10px; color: var(--text-dim); font-family: var(--mono); margin-top: 3px; }
+
+  /* Platform SLA */
+  .sla-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    gap: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sla-item:last-child { border-bottom: none; }
+
+  .platform-name { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .sla-pct { font-size: 20px; font-weight: 800; font-family: var(--mono); }
+
+  .sla-bar { flex: 1; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .sla-fill { height: 100%; border-radius: 3px; }
+  .sla-fill.high { background: var(--accent3); }
+  .sla-fill.med { background: var(--accent4); }
+  .sla-fill.low { background: var(--accent2); }
+  .sla-time { font-size: 10px; color: var(--text-muted); font-family: var(--mono); text-align: right; min-width: 50px; }
+
+  /* Scan input section */
+  .scan-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .scan-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .scan-input::placeholder { color: var(--text-dim); }
+  .scan-input:focus { border-color: var(--accent); }
+
+  .platform-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .tab {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: transparent;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+
+  .tab.active { background: rgba(0, 212, 255, 0.1); border-color: var(--accent); color: var(--accent); }
+  .tab:hover:not(.active) { border-color: var(--text-dim); color: var(--text); }
+
+  /* Blockchain TX preview */
+  .tx-item {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .tx-item:last-child { border-bottom: none; }
+
+  .tx-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); margin-top: 6px; flex-shrink: 0; }
+  .tx-hash { font-size: 11px; color: var(--accent); font-family: var(--mono); }
+  .tx-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .tx-time { font-size: 10px; color: var(--text-dim); font-family: var(--mono); margin-left: auto; flex-shrink: 0; }
+
+  /* Loading bar */
+  .topbar-loader {
+    width: 200px;
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-right: 4px;
+  }
+
+  .topbar-loader-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #0066ff);
+    border-radius: 2px;
+    width: 60%;
+    animation: load 2s ease-in-out infinite;
+  }
+
+  @keyframes load {
+    0% { width: 30%; margin-left: 0; }
+    50% { width: 40%; margin-left: 30%; }
+    100% { width: 30%; margin-left: 70%; }
+  }
+
+  /* Chart bars */
+  .chart-area {
+    padding: 16px 20px;
+    height: 120px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .chart-bar {
+    width: 100%;
+    background: rgba(0, 212, 255, 0.2);
+    border-radius: 4px 4px 0 0;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-bottom: none;
+    transition: all 0.3s;
+    animation: growUp 0.8s ease forwards;
+    transform-origin: bottom;
+  }
+
+  @keyframes growUp {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+
+  .chart-bar:hover { background: rgba(0, 212, 255, 0.4); }
+  .chart-label { font-size: 9px; color: var(--text-dim); font-family: var(--mono); }
+
+  /* Scrollable table */
+  .flagged-scroll { max-height: 280px; overflow-y: auto; }
+  .flagged-scroll::-webkit-scrollbar { width: 3px; }
+  .flagged-scroll::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* Alert banner */
+  .alert-banner {
+    background: rgba(255, 77, 109, 0.08);
+    border: 1px solid rgba(255, 77, 109, 0.2);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: fadeIn 0.5s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .alert-icon { font-size: 18px; }
+  .alert-text { font-size: 12px; color: #ff8fa3; flex: 1; }
+  .alert-text strong { color: var(--accent2); }
+  .alert-close { font-size: 16px; color: var(--text-muted); cursor: pointer; }
+  .alert-close:hover { color: var(--text); }
+
+  @media (max-width: 1200px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Fake<span>Shield</span></div>
+    <div class="logo-sub">Cyber Social Cell · India</div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">Monitor</div>
+    <div class="nav-item active">
+      <span class="icon">⊞</span> Dashboard
+    </div>
+    <div class="nav-item">
+      <span class="icon">⚡</span> Live Feed
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item">
+      <span class="icon">🔍</span> Scan Account
+    </div>
+
+    <div class="nav-section">Cases</div>
+    <div class="nav-item">
+      <span class="icon">📋</span> Case Board
+      <span class="nav-badge">47</span>
+    </div>
+    <div class="nav-item">
+      <span class="icon">📥</span> Reports Inbox
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-item">
+      <span class="icon">🚨</span> Escalated
+    </div>
+
+    <div class="nav-section">Intelligence</div>
+    <div class="nav-item">
+      <span class="icon">📊</span> Analytics
+    </div>
+    <div class="nav-item">
+      <span class="icon">⛓</span> Blockchain Log
+    </div>
+    <div class="nav-item">
+      <span class="icon">🌐</span> Platform SLA
+    </div>
+
+    <div class="nav-section">Admin</div>
+    <div class="nav-item">
+      <span class="icon">👥</span> Officers
+    </div>
+    <div class="nav-item">
+      <span class="icon">⚙</span> Settings
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar">RK</div>
+    <div class="user-info">
+      <div class="user-name">Rahul Kumar</div>
+      <div class="user-role">Senior Officer</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Central Agency Dashboard</div>
+    </div>
+    <div class="topbar-loader"><div class="topbar-loader-fill"></div></div>
+    <div class="topbar-sub">AI Engine Active</div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <div class="status-label">All Systems Operational</div>
+      <button class="btn btn-ghost">Export Report</button>
+      <button class="btn btn-primary">+ New Scan</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Alert Banner -->
+    <div class="alert-banner">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-text"><strong>3 Critical Cases</strong> have exceeded 50% of their SLA window. Platforms: Meta (2), Twitter (1). Escalation required within 18 hours.</div>
+      <div class="alert-close">×</div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card red">
+        <div class="kpi-label">Accounts Flagged Today</div>
+        <div class="kpi-value">284</div>
+        <div class="kpi-delta"><span class="up">▲ 18%</span> vs yesterday</div>
+        <div class="kpi-icon">🚩</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Cases Under Review</div>
+        <div class="kpi-value">47</div>
+        <div class="kpi-delta"><span class="up">▲ 5</span> new today</div>
+        <div class="kpi-icon">📋</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Accounts Suspended</div>
+        <div class="kpi-value">1,203</div>
+        <div class="kpi-delta"><span class="down">▼ 12%</span> avg takedown time</div>
+        <div class="kpi-icon">🔒</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Avg. Takedown Time</div>
+        <div class="kpi-value">38h</div>
+        <div class="kpi-delta">Target: <span class="down">72h</span> SLA</div>
+        <div class="kpi-icon">⏱</div>
+      </div>
+    </div>
+
+    <!-- Quick Scan Bar -->
+    <div class="scan-panel">
+      <div class="platform-tabs">
+        <button class="tab active">All</button>
+        <button class="tab">𝑓 Meta</button>
+        <button class="tab">📷 Instagram</button>
+        <button class="tab">𝕏 Twitter</button>
+      </div>
+      <input class="scan-input" type="text" placeholder="Enter profile URL or @username to scan..." value="https://twitter.com/suspicious_acc_291">
+      <button class="btn btn-primary">🔍 Scan Now</button>
+    </div>
+
+    <!-- Detection Chart + Flagged Accounts -->
+    <div class="two-col">
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <!-- Weekly Chart -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Weekly Detection Volume</div>
+            <div class="panel-count">Last 7 Days</div>
+          </div>
+          <div class="chart-area">
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:55px; animation-delay:0.05s;"></div>
+              <div class="chart-label">Mon</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:80px; background:rgba(255,77,109,0.2); border-color:rgba(255,77,109,0.3); animation-delay:0.1s;"></div>
+              <div class="chart-label">Tue</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:42px; animation-delay:0.15s;"></div>
+              <div class="chart-label">Wed</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:68px; animation-delay:0.2s;"></div>
+              <div class="chart-label">Thu</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:95px; background:rgba(255,77,109,0.2); border-color:rgba(255,77,109,0.3); animation-delay:0.25s;"></div>
+              <div class="chart-label">Fri</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:72px; animation-delay:0.3s;"></div>
+              <div class="chart-label">Sat</div>
+            </div>
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" style="height:88px; background:rgba(255,77,109,0.25); border-color:rgba(255,77,109,0.4); animation-delay:0.35s;"></div>
+              <div class="chart-label">Sun</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flagged Accounts -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🚩 Recently Flagged Accounts</div>
+            <div class="panel-count">284 today · sorted by score</div>
+          </div>
+          <div class="panel-body flagged-scroll">
+            <div class="account-row">
+              <div class="platform-icon tw">𝕏</div>
+              <div class="account-info">
+                <div class="account-name">@pm_narendramodi_official2</div>
+                <div class="account-meta">Twitter · 12.3K followers · Impersonation</div>
+              </div>
+              <div class="score-pill score-high">⚠ 94</div>
+              <div class="case-badge badge-new">New</div>
+            </div>
+            <div class="account-row">
+              <div class="platform-icon ig">📷</div>
+              <div class="account-info">
+                <div class="account-name">sbi.official.help.india</div>
+                <div class="account-meta">Instagram · 890 followers · Financial Fraud</div>
+              </div>
+              <div class="score-pill score-high">⚠ 91</div>
+              <div class="case-badge badge-escalated">Escalated</div>
+            </div>
+            <div class="account-row">
+              <div class="platform-icon fb">𝑓</div>
+              <div class="account-info">
+                <div class="account-name">Rahul Gandhi Congress Official</div>
+                <div class="account-meta">Facebook · 45.1K likes · Impersonation</div>
+              </div>
+              <div class="score-pill score-high">⚠ 88</div>
+              <div class="case-badge badge-review">Review</div>
+            </div>
+            <div class="account-row">
+              <div class="platform-icon tw">𝕏</div>
+              <div class="account-info">
+                <div class="account-name">@ISRO_Official_India2024</div>
+                <div class="account-meta">Twitter · 8.7K followers · Bot Network</div>
+              </div>
+              <div class="score-pill score-med">~ 74</div>
+              <div class="case-badge badge-review">Review</div>
+            </div>
+            <div class="account-row">
+              <div class="platform-icon ig">📷</div>
+              <div class="account-info">
+                <div class="account-name">amitshah.bjp.real</div>
+                <div class="account-meta">Instagram · 2.1K followers · Impersonation</div>
+              </div>
+              <div class="score-pill score-med">~ 68</div>
+              <div class="case-badge badge-new">New</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right column: Score Detail + Activity Feed -->
+      <div style="display:flex; flex-direction:column; gap:14px;">
+
+        <!-- FakeScore Breakdown -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🧠 AI Score Breakdown</div>
+          </div>
+          <div class="gauge-container">
+            <div class="selected-account">
+              <div class="selected-name">@pm_narendramodi_official2</div>
+              <div class="selected-url">twitter.com/pm_narendramodi_official2</div>
+            </div>
+
+            <div class="gauge-wrap">
+              <svg class="gauge-svg" viewBox="0 0 160 100">
+                <path d="M 20 90 A 60 60 0 0 1 140 90" stroke="#1a2a3a" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <path d="M 20 90 A 60 60 0 0 1 140 90" stroke="url(#gaugeGrad)" stroke-width="10" fill="none" stroke-linecap="round"
+                      stroke-dasharray="188.5" stroke-dashoffset="18" style="transition:stroke-dashoffset 1s ease;"/>
+                <defs>
+                  <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00d4ff"/>
+                    <stop offset="50%" stop-color="#ffd166"/>
+                    <stop offset="100%" stop-color="#ff4d6d"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="gauge-number">
+                <div class="gauge-val">94</div>
+                <div class="gauge-label">FAKE SCORE</div>
+              </div>
+            </div>
+
+            <div class="score-breakdown">
+              <div class="breakdown-item">
+                <div class="breakdown-label">
+                  <span class="breakdown-name">Metadata Analysis</span>
+                  <span class="breakdown-val">97%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill red" style="width:97%"></div></div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">
+                  <span class="breakdown-name">Image Authenticity</span>
+                  <span class="breakdown-val">82%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill red" style="width:82%"></div></div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">
+                  <span class="breakdown-name">NLP / Bio Analysis</span>
+                  <span class="breakdown-val">91%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill yellow" style="width:91%"></div></div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">
+                  <span class="breakdown-name">Network Graph</span>
+                  <span class="breakdown-val">78%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill blue" style="width:78%"></div></div>
+              </div>
+              <div class="breakdown-item">
+                <div class="breakdown-label">
+                  <span class="breakdown-name">Behavioral Pattern</span>
+                  <span class="breakdown-val">88%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill red" style="width:88%"></div></div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" style="flex:1; font-size:11px;">🚨 Raise Takedown</button>
+              <button class="btn btn-ghost" style="font-size:11px;">View Full Case</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📡 Live Activity Feed</div>
+          </div>
+          <div class="panel-body">
+            <div class="feed-item">
+              <div class="feed-dot" style="background:#ff4d6d;"></div>
+              <div>
+                <div class="feed-text"><strong>Twitter</strong> confirmed takedown of @fake_electoral_bot_88 — account suspended.</div>
+                <div class="feed-time">2 mins ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:#ffd166;"></div>
+              <div>
+                <div class="feed-text">New citizen report received for <strong>SBI phishing page</strong> on Instagram. Auto-scan initiated.</div>
+                <div class="feed-time">11 mins ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:#00d4ff;"></div>
+              <div>
+                <div class="feed-text">Blockchain TX committed for Case <strong>#CS-2024-0891</strong>. Hash stored on Fabric.</div>
+                <div class="feed-time">24 mins ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot" style="background:#ff4d6d;"></div>
+              <div>
+                <div class="feed-text">SLA breach warning: <strong>Meta</strong> has not responded to Case #CS-2024-0877 (68h elapsed).</div>
+                <div class="feed-time">1 hr ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platform SLA + Blockchain -->
+    <div class="three-col">
+      <!-- Platform SLA -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">🌐 Platform SLA Compliance</div>
+        </div>
+        <div>
+          <div class="sla-item">
+            <div style="font-size:18px;">𝕏</div>
+            <div class="platform-name">Twitter / X</div>
+            <div class="sla-bar"><div class="sla-fill high" style="width:91%"></div></div>
+            <div class="sla-pct" style="color:#00ff9d;">91%</div>
+            <div class="sla-time">avg 29h</div>
+          </div>
+          <div class="sla-item">
+            <div style="font-size:18px;">𝑓</div>
+            <div class="platform-name">Facebook / Meta</div>
+            <div class="sla-bar"><div class="sla-fill med" style="width:74%"></div></div>
+            <div class="sla-pct" style="color:#ffd166;">74%</div>
+            <div class="sla-time">avg 51h</div>
+          </div>
+          <div class="sla-item">
+            <div style="font-size:18px;">📷</div>
+            <div class="platform-name">Instagram</div>
+            <div class="sla-bar"><div class="sla-fill med" style="width:81%"></div></div>
+            <div class="sla-pct" style="color:#00d4ff;">81%</div>
+            <div class="sla-time">avg 38h</div>
+          </div>
+          <div class="sla-item">
+            <div style="font-size:18px;">▶</div>
+            <div class="platform-name">YouTube</div>
+            <div class="sla-bar"><div class="sla-fill low" style="width:58%"></div></div>
+            <div class="sla-pct" style="color:#ff4d6d;">58%</div>
+            <div class="sla-time">avg 79h</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blockchain Audit Preview -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">⛓ Blockchain Audit Trail</div>
+          <div class="panel-count">Hyperledger Fabric</div>
+        </div>
+        <div>
+          <div class="tx-item">
+            <div class="tx-dot"></div>
+            <div style="flex:1; min-width:0;">
+              <div class="tx-hash">0x7f3a...c91e</div>
+              <div class="tx-desc">Case #0891 — TAKEDOWN_CONFIRMED by Meta</div>
+            </div>
+            <div class="tx-time">09:42</div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-dot" style="background:#00d4ff;"></div>
+            <div style="flex:1; min-width:0;">
+              <div class="tx-hash">0x4b2c...8af1</div>
+              <div class="tx-desc">Case #0888 — EVIDENCE_LOCKED by Agency</div>
+            </div>
+            <div class="tx-time">08:17</div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-dot" style="background:#ffd166;"></div>
+            <div style="flex:1; min-width:0;">
+              <div class="tx-hash">0x9d1f...e720</div>
+              <div class="tx-desc">Case #0877 — SLA_BREACH flagged by system</div>
+            </div>
+            <div class="tx-time">07:05</div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-dot" style="background:#ff4d6d;"></div>
+            <div style="flex:1; min-width:0;">
+              <div class="tx-hash">0x3e8b...1f59</div>
+              <div class="tx-desc">Case #0864 — ESCALATED to Cyber Crime Cell</div>
+            </div>
+            <div class="tx-time">Yesterday</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Case Status Summary -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📊 Case Status Summary</div>
+        </div>
+        <div style="padding:20px; display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:12px; color:var(--text-muted); font-family:var(--mono);">New / Unassigned</span>
+              <span style="font-size:12px; font-weight:700; color:var(--accent);">23</span>
+            </div>
+            <div class="bar-track" style="height:6px;"><div class="bar-fill blue" style="width:49%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:12px; color:var(--text-muted); font-family:var(--mono);">Under Review</span>
+              <span style="font-size:12px; font-weight:700; color:var(--accent4);">47</span>
+            </div>
+            <div class="bar-track" style="height:6px;"><div class="bar-fill yellow" style="width:70%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:12px; color:var(--text-muted); font-family:var(--mono);">Takedown Sent</span>
+              <span style="font-size:12px; font-weight:700; color:var(--accent2);">31</span>
+            </div>
+            <div class="bar-track" style="height:6px;"><div class="bar-fill red" style="width:66%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:12px; color:var(--text-muted); font-family:var(--mono);">Escalated</span>
+              <span style="font-size:12px; font-weight:700; color:var(--accent2);">12</span>
+            </div>
+            <div class="bar-track" style="height:6px;"><div class="bar-fill red" style="width:25%"></div></div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:12px; color:var(--text-muted); font-family:var(--mono);">Closed / Suspended</span>
+              <span style="font-size:12px; font-weight:700; color:var(--accent3);">1,203</span>
+            </div>
+            <div class="bar-track" style="height:6px;"><div class="bar-fill green" style="width:100%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+
+  // Alert dismiss
+  document.querySelector('.alert-close').addEventListener('click', function() {
+    this.closest('.alert-banner').style.display = 'none';
+  });
+
+  // Nav item switching
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+    });
+  });
+
+  // Account row selection
+  document.querySelectorAll('.account-row').forEach(row => {
+    row.addEventListener('click', () => {
+      document.querySelectorAll('.account-row').forEach(r => r.style.background = '');
+      row.style.background = 'rgba(0, 212, 255, 0.04)';
+    });
+  });
+
+  // Animate bars on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(bar => {
+        const targetWidth = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => { bar.style.transition = 'width 1s ease'; bar.style.width = targetWidth; }, 100);
+      });
+    }, 300);
+  });
+</script>
+</body>
+</html>
