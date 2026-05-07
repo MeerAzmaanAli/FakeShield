@@ -8,7 +8,7 @@ import numpy as np
 import os
 
 # Model directory
-MODEL_DIR = './model'
+MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model')
 
 # Load models and scalers for each platform
 models = {}
