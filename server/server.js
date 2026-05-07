@@ -9,7 +9,7 @@ const connectDB = require('./config/db');
 dotenv.config();
 const app = express();
 
-// Configure CORS. Set `ALLOWED_ORIGINS` env var as a comma-separated list in production.
+// Configure CORS. Set `ALLOWED_ORIGINS` env var as a comma-separated list
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim().replace(/\/$/, '')) 
   : [];
