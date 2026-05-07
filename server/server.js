@@ -10,7 +10,9 @@ dotenv.config();
 const app = express();
 
 // Configure CORS. Set `ALLOWED_ORIGINS` env var as a comma-separated list in production.
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [];
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim().replace(/\/$/, '')) 
+  : [];
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); 
