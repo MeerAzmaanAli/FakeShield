@@ -36,10 +36,8 @@ app.get('/health', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-const isVercel = !!process.env.VERCEL;
-
 // Connect to DB. In non-serverless environments start the server.
-if (!isVercel) {
+if (require.main === module) {
   connectDB().then(() => {
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
