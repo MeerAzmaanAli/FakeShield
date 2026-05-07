@@ -1,4 +1,4 @@
-const ReportSchema = require("../models/report");
+const ReportSchema = require("../models/Report");
 const AuditLogSchema = require('../models/AuditLog');
 const { logReport } = require('../services/blockchainService');
 

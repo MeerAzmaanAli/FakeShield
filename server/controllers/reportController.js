@@ -1,4 +1,4 @@
-const ReportSchema = require( '../models/report.js');
+const ReportSchema = require( '../models/Report.js');
 exports.createReport = async (req, res) => {
     const {  profileURL, platform, profileData, aiScore, aiVerdict } = req.body;
     // Here you would typically save the report to the database
