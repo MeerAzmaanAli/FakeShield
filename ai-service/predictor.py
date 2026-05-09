@@ -3,9 +3,30 @@ Multi-platform predictor for fake account detection.
 Loads and uses platform-specific models for prediction.
 """
 
-import joblib
-import numpy as np
+import sys
 import os
+import numpy as np
+
+# Apply NumPy 2.x compatibility shim immediately
+if np.version.version.startswith('2.'):
+    try:
+        import numpy.exceptions
+        import numpy.core.numeric
+        if not hasattr(numpy.core.numeric, 'ComplexWarning'):
+            numpy.core.numeric.ComplexWarning = numpy.exceptions.ComplexWarning
+        if not hasattr(np, 'ComplexWarning'):
+            np.ComplexWarning = numpy.exceptions.ComplexWarning
+    except (ImportError, AttributeError):
+        pass
+
+# Limit threads for serverless environment
+try:
+    from threadpoolctl import threadpool_limits
+    threadpool_limits(limits=1)
+except ImportError:
+    pass
+
+import joblib
 
 # Model directory
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model')

@@ -10,6 +10,14 @@ import os
 app = Flask(__name__)
 CORS(app)
 
+@app.route('/', methods=['GET'])
+def index():
+    """Index endpoint."""
+    return jsonify({
+        "status": "AI service is running",
+        "endpoints": ["/health", "/predict", "/models"]
+    })
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint."""
